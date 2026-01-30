@@ -1,0 +1,514 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Calendar, 
+  Clock, 
+  User, 
+  Armchair,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Edit,
+  X,
+  Check,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  IndianRupee
+} from 'lucide-react';
+
+// Mock API
+const mockAPI = {
+  getBookings: (filters) => Promise.resolve({
+    bookings: [
+      { id: 1, bookingId: 'BK001', userName: 'Rahul Sharma', userEmail: 'rahul@example.com', seat: 'A-12', seatFloor: '1st Floor', shift: 'Morning', shiftTime: '6:00 AM - 12:00 PM', date: '2026-01-20', status: 'active', amount: 500, paymentStatus: 'paid' },
+      { id: 2, bookingId: 'BK002', userName: 'Priya Singh', userEmail: 'priya@example.com', seat: 'B-05', seatFloor: '1st Floor', shift: 'Evening', shiftTime: '12:00 PM - 6:00 PM', date: '2026-01-20', status: 'active', amount: 450, paymentStatus: 'paid' },
+      { id: 3, bookingId: 'BK003', userName: 'Amit Kumar', userEmail: 'amit@example.com', seat: 'C-08', seatFloor: '2nd Floor', shift: 'Night', shiftTime: '6:00 PM - 11:00 PM', date: '2026-01-19', status: 'completed', amount: 600, paymentStatus: 'paid' },
+      { id: 4, bookingId: 'BK004', userName: 'Sneha Patel', userEmail: 'sneha@example.com', seat: 'A-15', seatFloor: '1st Floor', shift: 'Morning', shiftTime: '6:00 AM - 12:00 PM', date: '2026-01-21', status: 'pending', amount: 500, paymentStatus: 'pending' },
+      { id: 5, bookingId: 'BK005', userName: 'Vikram Mehta', userEmail: 'vikram@example.com', seat: 'D-03', seatFloor: '2nd Floor', shift: 'Evening', shiftTime: '12:00 PM - 6:00 PM', date: '2026-01-18', status: 'cancelled', amount: 450, paymentStatus: 'refunded' },
+      { id: 6, bookingId: 'BK006', userName: 'Anjali Reddy', userEmail: 'anjali@example.com', seat: 'B-20', seatFloor: '1st Floor', shift: 'Morning', shiftTime: '6:00 AM - 12:00 PM', date: '2026-01-20', status: 'active', amount: 500, paymentStatus: 'paid' },
+      { id: 7, bookingId: 'BK007', userName: 'Rohan Gupta', userEmail: 'rohan@example.com', seat: 'C-15', seatFloor: '2nd Floor', shift: 'Night', shiftTime: '6:00 PM - 11:00 PM', date: '2026-01-20', status: 'active', amount: 600, paymentStatus: 'paid' },
+      { id: 8, bookingId: 'BK008', userName: 'Kavya Nair', userEmail: 'kavya@example.com', seat: 'A-08', seatFloor: '1st Floor', shift: 'Evening', shiftTime: '12:00 PM - 6:00 PM', date: '2026-01-19', status: 'completed', amount: 450, paymentStatus: 'paid' },
+    ],
+    total: 8,
+    page: 1,
+    totalPages: 1
+  })
+};
+
+const BookingsPage = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'all',
+    shift: 'all',
+    date: ''
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    pending: 0,
+    completed: 0,
+    cancelled: 0
+  });
+
+  useEffect(() => {
+    loadBookings();
+  }, [filters, currentPage]);
+
+  const loadBookings = async () => {
+    setLoading(true);
+    try {
+      const response = await mockAPI.getBookings(filters);
+      setBookings(response.bookings);
+      
+      // Calculate stats
+      const newStats = response.bookings.reduce((acc, booking) => {
+        acc.total++;
+        acc[booking.status]++;
+        return acc;
+      }, { total: 0, active: 0, pending: 0, completed: 0, cancelled: 0 });
+      setStats(newStats);
+    } catch (error) {
+      console.error('Failed to load bookings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      active: 'bg-green-100 text-green-800 border border-green-300',
+      pending: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+      completed: 'bg-amber-100 text-amber-800 border border-amber-300',
+      cancelled: 'bg-red-100 text-red-800 border border-red-300'
+    };
+    const icons = {
+      active: Check,
+      pending: Clock,
+      completed: Check,
+      cancelled: X
+    };
+    const Icon = icons[status];
+    
+    return (
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status]} flex items-center gap-1 w-fit`}>
+        <Icon className="w-3 h-3" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const getPaymentBadge = (status) => {
+    const styles = {
+      paid: 'bg-green-100 text-green-800 border border-green-300',
+      pending: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+      refunded: 'bg-blue-100 text-blue-800 border border-blue-300'
+    };
+    
+    return (
+      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      // API call to cancel booking
+      console.log('Cancelling booking:', bookingId);
+      setShowCancelModal(false);
+      loadBookings();
+    } catch (error) {
+      console.error('Failed to cancel booking:', error);
+    }
+  };
+
+  const StatCard = ({ label, value, color, icon: Icon }) => (
+    <div className={`${color} rounded-xl p-4 border-2 shadow-md hover:scale-105 transition-all`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium opacity-80 mb-1">{label}</p>
+          <h3 className="text-2xl font-bold">{value}</h3>
+        </div>
+        <Icon className="w-8 h-8 opacity-80" />
+      </div>
+    </div>
+  );
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.userName.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         booking.bookingId.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         booking.seat.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesStatus = filters.status === 'all' || booking.status === filters.status;
+    const matchesShift = filters.shift === 'all' || booking.shift === filters.shift;
+    const matchesDate = !filters.date || booking.date === filters.date;
+    
+    return matchesSearch && matchesStatus && matchesShift && matchesDate;
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-amber-900">Bookings Management</h1>
+            <p className="text-amber-700 mt-1">Manage all seat bookings and reservations</p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={loadBookings}
+              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 transition font-semibold shadow-md"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition font-semibold shadow-md">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <StatCard label="Total Bookings" value={stats.total} color="bg-gradient-to-br from-amber-100 to-orange-100 text-amber-900 border-amber-300" icon={Calendar} />
+          <StatCard label="Active" value={stats.active} color="bg-gradient-to-br from-green-100 to-emerald-100 text-green-900 border-green-300" icon={Check} />
+          <StatCard label="Pending" value={stats.pending} color="bg-gradient-to-br from-yellow-100 to-amber-100 text-yellow-900 border-yellow-300" icon={Clock} />
+          <StatCard label="Completed" value={stats.completed} color="bg-gradient-to-br from-blue-100 to-cyan-100 text-blue-900 border-blue-300" icon={Check} />
+          <StatCard label="Cancelled" value={stats.cancelled} color="bg-gradient-to-br from-red-100 to-pink-100 text-red-900 border-red-300" icon={X} />
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600" />
+              <input
+                type="text"
+                placeholder="Search by name, ID, seat..."
+                value={filters.search}
+                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                className="w-full pl-10 pr-4 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50"
+              />
+            </div>
+            
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({...filters, status: e.target.value})}
+              className="px-4 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 font-medium text-amber-900"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            <select
+              value={filters.shift}
+              onChange={(e) => setFilters({...filters, shift: e.target.value})}
+              className="px-4 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 font-medium text-amber-900"
+            >
+              <option value="all">All Shifts</option>
+              <option value="Morning">Morning</option>
+              <option value="Evening">Evening</option>
+              <option value="Night">Night</option>
+            </select>
+
+            <input
+              type="date"
+              value={filters.date}
+              onChange={(e) => setFilters({...filters, date: e.target.value})}
+              className="px-4 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50 font-medium text-amber-900"
+            />
+          </div>
+        </div>
+
+        {/* Bookings Table */}
+        <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 overflow-hidden">
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-amber-800 font-semibold">Loading bookings...</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-amber-100 to-orange-100 border-b-2 border-amber-300">
+                    <tr>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Booking ID</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">User Details</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Seat</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Shift</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Date</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Amount</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Status</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Payment</th>
+                      <th className="text-left py-4 px-4 text-sm font-bold text-amber-900">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((booking) => (
+                      <tr key={booking.id} className="border-b border-amber-100 hover:bg-amber-50 transition">
+                        <td className="py-4 px-4">
+                          <span className="font-bold text-amber-900">{booking.bookingId}</span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-amber-600 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {booking.userName.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-amber-900 text-sm">{booking.userName}</p>
+                              <p className="text-xs text-amber-700">{booking.userEmail}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div>
+                            <p className="font-semibold text-amber-900">{booking.seat}</p>
+                            <p className="text-xs text-amber-700">{booking.seatFloor}</p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div>
+                            <p className="font-semibold text-amber-900">{booking.shift}</p>
+                            <p className="text-xs text-amber-700">{booking.shiftTime}</p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-amber-900">
+                          {new Date(booking.date).toLocaleDateString('en-IN', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric' 
+                          })}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="font-bold text-amber-900 flex items-center gap-1">
+                            <IndianRupee className="w-4 h-4" />
+                            {booking.amount}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">{getStatusBadge(booking.status)}</td>
+                        <td className="py-4 px-4">{getPaymentBadge(booking.paymentStatus)}</td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setShowDetailsModal(true);
+                              }}
+                              className="p-2 hover:bg-amber-100 rounded-lg transition" 
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4 text-amber-700" />
+                            </button>
+                            {booking.status === 'active' && (
+                              <button 
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setShowCancelModal(true);
+                                }}
+                                className="p-2 hover:bg-red-100 rounded-lg transition" 
+                                title="Cancel Booking"
+                              >
+                                <X className="w-4 h-4 text-red-700" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="bg-amber-50 border-t-2 border-amber-200 px-6 py-4 flex items-center justify-between">
+                <p className="text-sm text-amber-800 font-medium">
+                  Showing {filteredBookings.length} of {stats.total} bookings
+                </p>
+                <div className="flex items-center gap-2">
+                  <button className="p-2 border-2 border-amber-300 rounded-lg hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <ChevronLeft className="w-4 h-4 text-amber-700" />
+                  </button>
+                  <span className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg font-semibold text-sm">
+                    1
+                  </span>
+                  <button className="p-2 border-2 border-amber-300 rounded-lg hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <ChevronRight className="w-4 h-4 text-amber-700" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedBooking && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl border-2 border-amber-300 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 flex items-center justify-between rounded-t-xl">
+                <h3 className="text-2xl font-bold">Booking Details</h3>
+                <button 
+                  onClick={() => setShowDetailsModal(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-amber-700 font-semibold mb-1">Booking ID</p>
+                    <p className="text-lg font-bold text-amber-900">{selectedBooking.bookingId}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-amber-700 font-semibold mb-1">Status</p>
+                    {getStatusBadge(selectedBooking.status)}
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-amber-200 pt-6">
+                  <h4 className="font-bold text-amber-900 mb-4 text-lg">User Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Name</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.userName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Email</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.userEmail}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-amber-200 pt-6">
+                  <h4 className="font-bold text-amber-900 mb-4 text-lg">Booking Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Seat Number</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.seat}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Floor</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.seatFloor}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Shift</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.shift}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Timing</p>
+                      <p className="font-semibold text-amber-900">{selectedBooking.shiftTime}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Date</p>
+                      <p className="font-semibold text-amber-900">
+                        {new Date(selectedBooking.date).toLocaleDateString('en-IN', { 
+                          day: '2-digit', 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-amber-700 font-semibold mb-1">Amount</p>
+                      <p className="font-bold text-amber-900 text-lg flex items-center gap-1">
+                        <IndianRupee className="w-5 h-5" />
+                        {selectedBooking.amount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-amber-200 pt-6">
+                  <h4 className="font-bold text-amber-900 mb-4 text-lg">Payment Information</h4>
+                  <div>
+                    <p className="text-sm text-amber-700 font-semibold mb-1">Payment Status</p>
+                    {getPaymentBadge(selectedBooking.paymentStatus)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border-t-2 border-amber-200 p-6 flex gap-3 rounded-b-xl">
+                <button 
+                  onClick={() => setShowDetailsModal(false)}
+                  className="flex-1 px-4 py-2 border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition font-semibold"
+                >
+                  Close
+                </button>
+                {selectedBooking.status === 'active' && (
+                  <button 
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      setShowCancelModal(true);
+                    }}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition font-semibold"
+                  >
+                    Cancel Booking
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Modal */}
+        {showCancelModal && selectedBooking && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl border-2 border-red-300 max-w-md w-full">
+              <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-t-xl">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-8 h-8" />
+                  <h3 className="text-xl font-bold">Cancel Booking</h3>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-amber-900 mb-4">
+                  Are you sure you want to cancel booking <strong>{selectedBooking.bookingId}</strong> for <strong>{selectedBooking.userName}</strong>?
+                </p>
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm text-amber-800"><strong>Seat:</strong> {selectedBooking.seat}</p>
+                  <p className="text-sm text-amber-800"><strong>Date:</strong> {new Date(selectedBooking.date).toLocaleDateString('en-IN')}</p>
+                  <p className="text-sm text-amber-800"><strong>Amount:</strong> ₹{selectedBooking.amount}</p>
+                </div>
+                <p className="text-sm text-red-700 mt-4 font-semibold">
+                  This action cannot be undone. The user will be refunded if payment was made.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border-t-2 border-amber-200 p-6 flex gap-3 rounded-b-xl">
+                <button 
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition font-semibold"
+                >
+                  Keep Booking
+                </button>
+                <button 
+                  onClick={() => handleCancelBooking(selectedBooking.id)}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition font-semibold"
+                >
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BookingsPage;
