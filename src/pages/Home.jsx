@@ -2,10 +2,11 @@
 import { BookOpen, User, ChevronRight  ,Armchair , Calendar ,Clock, Phone, MapPin} from "lucide-react";
 import React from 'react'
 import Footer from "../components/Footer";
+import { useNavigate } from "react-router-dom";
 
 
 const Home = () => {
-
+const navigate = useNavigate()
   const services = [
 {
   icon: BookOpen,
@@ -36,6 +37,14 @@ const Home = () => {
   iconColor: "text-amber-700",
 },
 ];
+
+const handleNavigation = ()=>{
+navigate("/dashboard/seats")
+}
+
+const handleExplore = ()=>{
+console.log('object')
+}
   return (
     <div>
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
@@ -51,14 +60,14 @@ const Home = () => {
             </p>
             <div className="flex gap-4">
               <button
-                onClick={() => handleNavigation("seats")}
+                onClick={() => handleNavigation()}
                 className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:scale-105 transition flex items-center gap-2"
               >
                 Book a Seat
                 <ChevronRight  className="w-5 h-5" />
               </button>
               <button
-                onClick={() => handleNavigation("services")}
+                onClick={()=> handleExplore()}
                 className="border-2 border-amber-600 text-amber-600 px-8 py-3 rounded-lg font-semibold hover:bg-amber-50 transition"
               >
                 Explore

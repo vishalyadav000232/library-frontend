@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Armchair,
   Clock,
@@ -7,19 +7,22 @@ import {
   X,
   Filter,
   Search,
-  ChevronDown,
 } from "lucide-react";
 import { getAllSeats } from "../Api/seat_services";
+import { getAllShift } from "../Api/shift";
+import { getCurrentUser } from "../Api/usrs";
+import { createBooking } from "../Api/booking";
 
 export default function SeatBookingPage() {
   // ---------------- STATE ----------------
   const [selectedShift, setSelectedShift] = useState("all");
   const [selectedFloor, setSelectedFloor] = useState("all");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentUser , setCurrentUser] = useState({})
 
   // ---------------- SHIFTS DATA ----------------
   const shifts = [
@@ -30,61 +33,105 @@ export default function SeatBookingPage() {
     { id: "fullday", name: "Full Day", time: "6:00 AM - 11:00 PM" },
   ];
 
-  // ---------------- SEATS DATA ----------------
-  const generateSeats = () => {
-    const seats = [];
-    const floors = ["Ground Floor", "First Floor", "Second Floor"];
-    const sections = ["A", "B", "C", "D"];
-    
-    floors.forEach((floor, floorIndex) => {
-      sections.forEach((section) => {
-        for (let i = 1; i <= 12; i++) {
-          const seatNumber = `${section}${i.toString().padStart(2, "0")}`;
-          const isAvailable = Math.random() > 0.3; // 70% available
-          
-          seats.push({
-            id: `${floorIndex}-${section}-${i}`,
+  // ---------------- SEATS DATA (API) ----------------
+  const [seats, setSeats] = useState([]);
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [shift, setShift] = useState([]);
+  const [shifData, setShiftData] = useState({});
+
+  //! Fetch all seats
+
+  useEffect(() => {
+    const fetchSeat = async () => {
+      try {
+        const res = await getAllSeats();
+
+        // API response can be [] or {data: []}
+        const seatList = Array.isArray(res) ? res : res?.data || [];
+
+        // ✅ Convert API seats -> UI format
+        const formattedSeats = seatList.map((s, index) => {
+          const seatNumber = s.seat_number || "NA";
+          const section = seatNumber?.[0] || "A";
+
+          // floor auto assign (demo logic)
+          const floor =
+            index < 8
+              ? "Ground Floor"
+              : index < 16
+                ? "First Floor"
+                : index < 24
+                  ? "Second Floor"
+                  : "Third Floor";
+
+          // premium/standard logic
+          const type = index % 12 >= 6 ? "Premium" : "Standard";
+
+          return {
+            id: s.id,
             seatNumber,
-            floor,
             section,
-            isAvailable,
-            type: i <= 6 ? "Standard" : "Premium",
-            price: i <= 6 ? 50 : 80,
-            amenities: i > 6 ? ["Power Outlet", "Reading Lamp", "Cushioned"] : ["Power Outlet"],
-          });
-        }
-      });
-    });
-    
-    return seats;
+            floor,
+
+            isAvailable: s.is_active,
+
+            type,
+            price: type === "Premium" ? 80 : 50,
+          };
+        });
+
+        setSeats(formattedSeats);
+      } catch (error) {
+        console.log("failed to fetch seat", error);
+      }
+    };
+
+    fetchSeat();
+  }, []);
+
+  //! Fetch shifts
+ 
+  useEffect(() => {
+    const fetchShift = async () => {
+      try {
+        const res = await getAllShift();
+        console.log(res);
+        setShift(res);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchShift();
+  }, []);
+
+  //! Get Current user 
+
+  useEffect(() => {
+  let isMounted = true;
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      if (isMounted) setCurrentUser(user);
+    } catch (error) {
+      console.log("Current user fetching failed", error);
+    }
   };
 
-  // const [seats] = useState(generateSeats());
-  const [selectedSeats, setSelectedSeats] = useState([]);
+  fetchCurrentUser();
 
-const [seats , setSeats] = useState([])
+  return () => {
+    isMounted = false;
+  };
+}, []);
 
-  // ! Get all Seat Api
+  //! ---------------- HANDLERS ----------------
 
-  useEffect(()=>{
-    const fetchSeat = async ()=>{
-      try {
-        const res = await getAllSeats()
-        setSeats(res)
-      } catch (error) {
-        
-      }
-    
-    }
-    fetchSeat()
-  },[])
-
-  // ---------------- HANDLERS ----------------
   const handleSeatSelect = (seat) => {
     if (!seat.isAvailable) return;
-
+    console.log(seat.id);
     const isSelected = selectedSeats.find((s) => s.id === seat.id);
-    
+
     if (isSelected) {
       setSelectedSeats(selectedSeats.filter((s) => s.id !== seat.id));
     } else {
@@ -92,29 +139,76 @@ const [seats , setSeats] = useState([])
     }
   };
 
-  const handleBooking = () => {
-    if (selectedSeats.length === 0) {
-      alert("Please select at least one seat");
+  const haandlShift = (shift) => {
+    setShiftData(shift);
+  };
+
+ const handleBooking = async () => {
+  if (selectedSeats.length === 0) {
+    alert("Please select at least one seat");
+    return;
+  }
+
+  try {
+    // Example: currentUser.id, selectedShift.id, selectedDate
+    const userId = currentUser?.id;
+    const shiftId = shifData?.id; 
+    const date = selectedDate; 
+
+    if (!userId || !shiftId || !date) {
+      alert("Missing user / shift / date");
       return;
     }
 
-    const bookingData = {
-      seats: selectedSeats,
-      shift: selectedShift,
-      date: selectedDate,
-      totalPrice: selectedSeats.reduce((sum, seat) => sum + seat.price, 0),
-    };
+    const requests = selectedSeats.map((seat) => {
+      const payload = {
+        user_id: userId,
+        seat_id: String(seat.id),
+        shift_id: String(shiftId),
+        start_date: date,
+        end_date: date,
+      };
 
-    console.log("Booking:", bookingData);
+      return createBooking(payload);
+    });
+
+    await Promise.all(requests);
+
     alert(`Booking confirmed for ${selectedSeats.length} seat(s)!`);
     setSelectedSeats([]);
-  };
+  } catch (error) {
+    console.log("Booking failed:", error);
+    alert("Booking failed!");
+  }
+};
+
 
   // ---------------- FILTERING ----------------
-  const filteredSeats = seats
+  const filteredSeats = useMemo(() => {
+    return seats.filter((seat) => {
+      // floor filter
+      if (selectedFloor !== "all" && seat.floor !== selectedFloor) return false;
 
-  const availableCount = filteredSeats.filter(s => s.isAvailable).length;
-  const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+      // search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const seatNum = (seat.seatNumber || "").toLowerCase();
+        const section = (seat.section || "").toLowerCase();
+        if (!seatNum.includes(q) && !section.includes(q)) return false;
+      }
+
+      return true;
+    });
+  }, [seats, selectedFloor, searchQuery]);
+
+  const availableCount = filteredSeats.filter((s) => s.isAvailable).length;
+  const totalPrice = selectedSeats.reduce(
+    (sum, seat) => sum + (seat.price || 0),
+    0,
+  );
+
+  // Floors list for grouping
+  const floors = ["Ground Floor", "First Floor", "Second Floor", "Third Floor"];
 
   // ---------------- UI ----------------
   return (
@@ -128,12 +222,15 @@ const [seats , setSeats] = useState([])
                 <Armchair className="w-6 h-6 text-amber-800" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-amber-900">Book Your Seat</h1>
+                <h1 className="text-2xl font-bold text-amber-900">
+                  Book Your Seat
+                </h1>
                 <p className="text-sm text-amber-700">
                   {availableCount} seats available
                 </p>
               </div>
             </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="md:hidden p-2 bg-amber-100 rounded-lg text-amber-800"
@@ -143,7 +240,11 @@ const [seats , setSeats] = useState([])
           </div>
 
           {/* Filters */}
-          <div className={`${showFilters ? 'block' : 'hidden'} md:block space-y-3 md:space-y-0 md:grid md:grid-cols-4 md:gap-4`}>
+          <div
+            className={`${
+              showFilters ? "block" : "hidden"
+            } md:block space-y-3 md:space-y-0 md:grid md:grid-cols-4 md:gap-4`}
+          >
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-amber-900 mb-1">
@@ -165,14 +266,23 @@ const [seats , setSeats] = useState([])
                 <Clock className="w-4 h-4 inline mr-1" />
                 Shift
               </label>
+
               <select
                 value={selectedShift}
-                onChange={(e) => setSelectedShift(e.target.value)}
+                onChange={(e) => {
+                  const shiftId = e.target.value;
+                  setSelectedShift(shiftId);
+
+                  const selected = shift.find((s) => s.id === shiftId);
+                  if (selected) haandlShift(selected);
+                }}
                 className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm appearance-none"
               >
-                {shifts.map((shift) => (
-                  <option key={shift.id} value={shift.id}>
-                    {shift.name} {shift.time && `- ${shift.time}`}
+                <option value="">Select Shift</option>
+
+                {shift.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {`${s.start_time} - ${s.end_time}`}
                   </option>
                 ))}
               </select>
@@ -218,10 +328,10 @@ const [seats , setSeats] = useState([])
         <div className="max-w-7xl mx-auto px-4 md:px-6 mt-4">
           <div className="bg-amber-100 border-l-4 border-amber-600 p-4 rounded-lg">
             <p className="text-amber-900 font-medium">
-              Selected: {shifts.find(s => s.id === selectedShift)?.name}
+              Selected: {shift.find((s) => s.id === selectedShift)?.name}
             </p>
             <p className="text-amber-700 text-sm">
-              {shifts.find(s => s.id === selectedShift)?.time}
+              {shifts.find((s) => s.id === selectedShift)?.time}
             </p>
           </div>
         </div>
@@ -250,19 +360,21 @@ const [seats , setSeats] = useState([])
         </div>
 
         {/* Group by Floor */}
-        {["Ground Floor", "First Floor", "Second Floor"].map((floor) => {
+        {floors.map((floor) => {
           const floorSeats = filteredSeats.filter((s) => s.floor === floor);
-          
+
           if (floorSeats.length === 0) return null;
 
           return (
             <div key={floor} className="mb-8">
               <h2 className="text-xl font-bold text-amber-900 mb-4">{floor}</h2>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {floorSeats.map((seat) => {
-                  const isSelected = selectedSeats.find((s) => s.id === seat.id);
-                  
+                  const isSelected = selectedSeats.find(
+                    (s) => s.id === seat.id,
+                  );
+
                   return (
                     <button
                       key={seat.id}
@@ -270,13 +382,14 @@ const [seats , setSeats] = useState([])
                       disabled={!seat.isAvailable}
                       className={`
                         relative p-4 rounded-xl border-2 transition-all duration-200
-                        ${!seat.isAvailable 
-                          ? "bg-gray-200 border-gray-400 cursor-not-allowed opacity-60" 
-                          : isSelected
-                          ? "bg-amber-100 border-amber-500 shadow-lg scale-105"
-                          : seat.type === "Premium"
-                          ? "bg-purple-50 border-purple-500 hover:scale-105 hover:shadow-md"
-                          : "bg-green-50 border-green-500 hover:scale-105 hover:shadow-md"
+                        ${
+                          !seat.isAvailable
+                            ? "bg-gray-200 border-gray-400 cursor-not-allowed opacity-60"
+                            : isSelected
+                              ? "bg-amber-100 border-amber-500 shadow-lg scale-105"
+                              : seat.type === "Premium"
+                                ? "bg-purple-50 border-purple-500 hover:scale-105 hover:shadow-md"
+                                : "bg-green-50 border-green-500 hover:scale-105 hover:shadow-md"
                         }
                       `}
                     >
@@ -284,6 +397,7 @@ const [seats , setSeats] = useState([])
                         <span className="font-bold text-lg text-amber-900">
                           {seat.seatNumber}
                         </span>
+
                         {isSelected && (
                           <Check className="w-5 h-5 text-amber-600" />
                         )}
@@ -291,9 +405,11 @@ const [seats , setSeats] = useState([])
                           <X className="w-5 h-5 text-gray-600" />
                         )}
                       </div>
-                      
+
                       <div className="text-xs text-left space-y-1">
-                        <p className="text-amber-800 font-medium">{seat.type}</p>
+                        <p className="text-amber-800 font-medium">
+                          {seat.type}
+                        </p>
                         <p className="text-amber-700">₹{seat.price}/shift</p>
                       </div>
 

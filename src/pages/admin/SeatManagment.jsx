@@ -9,6 +9,7 @@ import {
   Armchair,
   AlertCircle,
 } from "lucide-react";
+
 import {
   createSeat,
   deleteSeat,
@@ -16,95 +17,37 @@ import {
   updateSeat,
 } from "../../Api/seat_services";
 
-// TODO: Import your actual API functions
-// import { getAllSeats, createSeat, updateSeat, deleteSeat } from "../../Api/seat_services";
-
-// Mock API for demonstration - Replace with your actual API
-const seatAPI = {
-  // GET ALL SEATS - You already have this: getAllSeats()
-  getAllSeats: async () => {
-    // Replace with: return await getAllSeats();
-    return [
-      { id: "1", seat_number: "A-01", is_active: true },
-      { id: "2", seat_number: "A-02", is_active: true },
-      { id: "3", seat_number: "B-01", is_active: false },
-    ];
-  },
-
-  // CREATE SEAT - POST /seats
-  // Expected payload: { seat_number: "A-01" }
-  createSeat: async (seatData) => {
-    // Replace with your actual API call
-    // const response = await fetch(`${API_BASE_URL}/seats`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(seatData)
-    // });
-    // return await response.json();
-
-    return {
-      id: Math.random().toString(),
-      seat_number: seatData.seat_number,
-      is_active: true,
-    };
-  },
-
-  // UPDATE SEAT - PUT /seats/{seat_id}
-  // Expected payload: { seat_number: "A-01", is_active: true }
-  updateSeat: async (seatId, seatData) => {
-    // Replace with your actual API call
-    // const response = await fetch(`${API_BASE_URL}/seats/${seatId}`, {
-    //   method: "PUT",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(seatData)
-    // });
-    // return await response.json();
-
-    return {
-      id: seatId,
-      ...seatData,
-    };
-  },
-
-  // DELETE SEAT - DELETE /seats/{seat_id}
-  deleteSeat: async (seatId) => {
-    // Replace with your actual API call
-    // const response = await fetch(`${API_BASE_URL}/seats/${seatId}`, {
-    //   method: "DELETE"
-    // });
-    // return await response.json();
-
-    return { success: true };
-  },
-};
-
 const SeatManagement = () => {
+
   const [seats, setSeats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // 'create' or 'edit'
+  const [modalMode, setModalMode] = useState("create"); 
   const [currentSeat, setCurrentSeat] = useState(null);
+
   const [formData, setFormData] = useState({
     seat_number: "",
     is_active: true,
   });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Load seats on component mount
+  //!  Load seats on component mount
   useEffect(() => {
     loadSeats();
   }, []);
 
-  // ! Seat api
+  //! Load all seats
+
 
   const loadSeats = async () => {
     try {
       setLoading(true);
       const data = await getAllSeats();
       setSeats(data);
-      console.log(data);
     } catch (err) {
       setError("Failed to load seats");
       console.error(err);
@@ -119,9 +62,11 @@ const SeatManagement = () => {
     setFormData({ seat_number: "", is_active: true });
     setCurrentSeat(null);
     setError("");
+    setSuccess("");
     setShowModal(true);
   };
 
+  // Open modal for edit
   const handleEdit = (seat) => {
     setModalMode("edit");
     setCurrentSeat(seat);
@@ -130,14 +75,15 @@ const SeatManagement = () => {
       is_active: seat.is_active,
     });
     setError("");
+    setSuccess("");
     setShowModal(true);
   };
 
+  //! Create / Update seat submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-
 
     if (!formData.seat_number.trim()) {
       setError("Seat number is required");
@@ -147,25 +93,18 @@ const SeatManagement = () => {
     try {
       if (modalMode === "create") {
         await createSeat({
-          seat_number: formData.seat_number?.trim(),
+          seat_number: formData.seat_number.trim(),
           is_active: formData.is_active,
         });
 
         setSuccess("Seat created successfully!");
       } else {
-        const payload = {};
+        const payload = {
+          seat_number: formData.seat_number.trim(),
+          is_active: formData.is_active,
+        };
 
-        if (formData.seat_number?.trim()) {
-          payload.seat_number = formData.seat_number.trim();
-        }
-
-        if (typeof formData.is_active === "boolean") {
-          payload.is_active = formData.is_active;
-        }
-        console.log(payload)
-        const res = await updateSeat(currentSeat.id, payload);
-
-        console.log("Update response:", res);
+        await updateSeat(currentSeat.id, payload);
         setSuccess("Seat updated successfully!");
       }
 
@@ -174,7 +113,7 @@ const SeatManagement = () => {
       setTimeout(() => {
         setShowModal(false);
         setSuccess("");
-      }, 1500);
+      }, 1200);
     } catch (err) {
       const errorMessage =
         err?.response?.data?.detail || err?.message || "Operation failed";
@@ -184,55 +123,73 @@ const SeatManagement = () => {
     }
   };
 
-  // Handle seat deletion
+  //! Delete seat
+
+
   const handleDelete = async (seat) => {
     if (
       !window.confirm(
-        `Are you sure you want to delete seat ${seat.seat_number}?`,
+        `Are you sure you want to delete seat ${seat.seat_number}?`
       )
     ) {
       return;
     }
 
     try {
+      setError("");
+      setSuccess("");
+
       await deleteSeat(seat.id);
+
       setSuccess(`Seat ${seat.seat_number} deleted successfully!`);
-      const res = await loadSeats();
-      console.log(res);
-      setTimeout(() => setSuccess(""), 3000);
+      await loadSeats();
+
+      setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
-      setError("Failed to delete seat");
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to delete seat";
+
+      setError(errorMessage);
       console.error(err);
-      setTimeout(() => setError(""), 3000);
+
+      setTimeout(() => setError(""), 2500);
     }
   };
 
-  // Toggle seat active status
+  // Toggle active status (REAL API)
   const handleToggleActive = async (seat) => {
     try {
-      // TODO: Replace with your actual updateSeat API call
-      // PUT /seats/{seat_id}
-      await seatAPI.updateSeat(seat.id, {
-        seat_number: seat.seat_number,
+      setError("");
+      setSuccess("");
+
+      const payload = {
         is_active: !seat.is_active,
-      });
+      };
+
+      await updateSeat(seat.id, payload);
       await loadSeats();
+
       setSuccess(
         `Seat ${seat.seat_number} ${
           !seat.is_active ? "activated" : "deactivated"
-        }`,
+        } successfully!`
       );
-      setTimeout(() => setSuccess(""), 3000);
+
+      setTimeout(() => setSuccess(""), 2500);
     } catch (err) {
-      setError("Failed to update seat status");
+      const errorMessage =
+        err?.response?.data?.detail || err?.message || "Failed to update seat status";
+
+      setError(errorMessage);
       console.error(err);
-      setTimeout(() => setError(""), 3000);
+
+      setTimeout(() => setError(""), 2500);
     }
   };
 
   // Filter seats based on search query
   const filteredSeats = seats.filter((seat) =>
-    seat.seat_number.toLowerCase().includes(searchQuery.toLowerCase()),
+    seat.seat_number.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -362,6 +319,7 @@ const SeatManagement = () => {
                   >
                     {seat.is_active ? "Deactivate" : "Activate"}
                   </button>
+
                   <button
                     onClick={() => handleEdit(seat)}
                     className="p-2 bg-amber-100 hover:bg-amber-200 rounded-lg transition"
@@ -369,6 +327,7 @@ const SeatManagement = () => {
                   >
                     <Edit className="w-4 h-4 text-amber-700" />
                   </button>
+
                   <button
                     onClick={() => handleDelete(seat)}
                     className="p-2 bg-red-100 hover:bg-red-200 rounded-lg transition"
@@ -388,12 +347,14 @@ const SeatManagement = () => {
             <p className="text-sm text-amber-700 mb-1">Total Seats</p>
             <p className="text-3xl font-bold text-amber-900">{seats.length}</p>
           </div>
+
           <div className="bg-white rounded-xl shadow-lg border-2 border-green-200 p-6">
             <p className="text-sm text-green-700 mb-1">Active Seats</p>
             <p className="text-3xl font-bold text-green-900">
               {seats.filter((s) => s.is_active).length}
             </p>
           </div>
+
           <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-6">
             <p className="text-sm text-gray-700 mb-1">Inactive Seats</p>
             <p className="text-3xl font-bold text-gray-900">
@@ -421,7 +382,7 @@ const SeatManagement = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Error Message */}
               {error && (
                 <div className="bg-red-100 border-2 border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
@@ -492,14 +453,15 @@ const SeatManagement = () => {
                 >
                   Cancel
                 </button>
+
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition font-bold shadow-md"
                 >
                   {modalMode === "create" ? "Create Seat" : "Update Seat"}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

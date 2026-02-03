@@ -10,7 +10,8 @@ import LayoutPage from "./pages/Layout";
 import SeatBookingPage from "./pages/SeatBookinPage";
 import Dashboard from "./pages/admin/AdminDashboord";
 import BookingsPage from "./pages/admin/BookingManagment";
-import BookingsPages from "./pages/BookingsPages";
+import BookingsPages from "./pages/MyBookingsPages";
+import MyBookingsPage from "./pages/MyBookingsPages";
 
 function App() {
   return (
@@ -44,7 +45,8 @@ function App() {
         <Route index element={<Navigate to="home" replace />} />
         <Route path="home" element={<Home />} />
         <Route path="seats" element={<SeatBookingPage />} />
-        <Route path="bookings" element={<BookingsPages />} />
+        <Route path="bookings" element={<SeatBookingPage />} />
+        <Route path="my-bookings" element={<MyBookingsPage />} />
       </Route>
 
       {/* 404 */}

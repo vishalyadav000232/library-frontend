@@ -8,12 +8,6 @@ import {
   Clock,
   FileText,
   Settings,
-  Bell,
-  Search,
-  LogOut,
-  ChevronDown,
-  TrendingUp,
-  TrendingDown,
   IndianRupee,
   Plus,
   Edit,
@@ -22,7 +16,6 @@ import {
   BookOpen,
   MapPin,
   Phone,
-  Menu,
   X,
 } from "lucide-react";
 
@@ -31,141 +24,47 @@ import SeatManagement from "./SeatManagment";
 import AdminUserManagement from "./AdminUserManagment";
 import StatCard from "./ui/StatCard";
 import Header from "./ui/Header";
+
 import { getDashboardData } from "../../Api/admin";
 import { get_all_users } from "../../Api/usrs";
-import { getAllSeats } from "../../Api/seat_services";
-
-
-const mockAPI = {
-  getDashboardStats: () =>
-    Promise.resolve({
-      totalSeats: null,
-      availableSeats: 45,
-      activeBookings: 75,
-      todayCheckins: 28,
-      monthlyRevenue: 67000,
-      trends: { seats: 5, bookings: 12, revenue: 8 },
-    }),
-  getRecentBookings: () =>
-    Promise.resolve([
-      {
-        id: 1,
-        user: "Rahul Sharma",
-        seat: "A-12",
-        shift: "Morning",
-        status: "active",
-        amount: 500,
-      },
-      {
-        id: 2,
-        user: "Priya Singh",
-        seat: "B-05",
-        shift: "Evening",
-        status: "active",
-        amount: 450,
-      },
-      {
-        id: 3,
-        user: "Amit Kumar",
-        seat: "C-08",
-        shift: "Night",
-        status: "completed",
-        amount: 600,
-      },
-      {
-        id: 4,
-        user: "Sneha Patel",
-        seat: "A-15",
-        shift: "Morning",
-        status: "active",
-        amount: 500,
-      },
-      {
-        id: 5,
-        user: "Vikram Mehta",
-        seat: "D-03",
-        shift: "Evening",
-        status: "cancelled",
-        amount: 450,
-      },
-    ]),
-};
 
 const AdminDashboard = () => {
-
-  // 
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [stats, setStats] = useState(null);
-  const [recentBookings, setRecentBookings] = useState([]);
+
   const [loading, setLoading] = useState(true);
-  const [seat, setSeats] = useState([]);
+
   const [user, setUser] = useState([]);
-  const [dashboard ,setDashboard] = useState({})
+  const [dashboard, setDashboard] = useState({
+    total_seats: 0,
+    available_seats: 0,
+    total_bookings: 0,
+    monthly_revenue: 0,
+  });
 
-
-  console.log(dashboard)
-
-
-// ! geet all user  data 
-
+  // ✅ Load all real data (Dashboard + Users)
   useEffect(() => {
-    const fetchUsers = async () => {
+    const loadAll = async () => {
       try {
-       
-        const users = await get_all_users()
-        setUser(users);
-        console.log(users);
+        setLoading(true);
+
+        const [dashboardData, users] = await Promise.all([
+          getDashboardData(),
+          get_all_users(),
+        ]);
+
+        setDashboard(dashboardData || {});
+        setUser(users || []);
       } catch (error) {
-        console.error("Failed to fetch users:", error);
+        console.error("Failed to load admin dashboard data:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchUsers();
+
+    loadAll();
   }, []);
-
-
-  // ! overview data 
-
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-       
-        const dashboardData = await getDashboardData();
-        setDashboard(dashboardData)
-        console.log(dashboardData);
-      } catch (error) {
-        console.error("Failed to fetch dashboeard data :", error);
-      }
-    };
-    fetchDashboardData();
-  }, []);
-
-
-  useEffect(() => {
-    loadDashboardData();
-   
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      // TODO: Replace mockAPI calls with your actual API calls
-      // Example:
-      // const statsData = await getDashboardStats();
-      // const bookingsData = await getRecentBookings();
-      const [statsData, bookingsData] = await Promise.all([
-        mockAPI.getDashboardStats(),
-        mockAPI.getRecentBookings(),
-      ]);
-      setStats(statsData);
-      setRecentBookings(bookingsData);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -178,69 +77,47 @@ const AdminDashboard = () => {
     { id: "settings", icon: Settings, label: "Settings" },
   ];
 
-
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      active: "bg-green-100 text-green-800 border border-green-300",
-      completed: "bg-amber-100 text-amber-800 border border-amber-300",
-      cancelled: "bg-red-100 text-red-800 border border-red-300",
-    };
-    return (
-      <span
-        className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full ${styles[status]}`}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
+  // Close mobile menu when changing pages
+  const handlePageChange = (pageId) => {
+    setCurrentPage(pageId);
+    setShowMobileMenu(false);
   };
 
   // TODO: Add handler functions for user actions
   const handleViewUser = (userId) => {
     console.log("View user:", userId);
-    // Implement view user logic - open modal or navigate to user details page
   };
 
   const handleEditUser = (userId) => {
     console.log("Edit user:", userId);
-    // Implement edit user logic - open edit form/modal
   };
 
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-       
+        // 🔥 Delete API yaha add karna hoga
+        // await deleteUser(userId);
+
+        // Refresh users list
         const users = await get_all_users();
-        setUser(users);
+        setUser(users || []);
       } catch (error) {
         console.error("Failed to delete user:", error);
       }
     }
   };
 
-  // TODO: Add handler for adding new seat
   const handleAddSeat = () => {
     console.log("Add new seat");
-    // Navigate to add seat page or open modal
   };
 
-  // TODO: Add handler for managing shifts
   const handleManageShifts = () => {
     console.log("Manage shifts");
     setCurrentPage("shifts");
   };
 
-  // TODO: Add handler for exporting reports
   const handleExportReports = () => {
     console.log("Export reports");
-    // Implement CSV export logic
-    // You can use a library or create CSV manually
-  };
-
-  // Close mobile menu when changing pages
-  const handlePageChange = (pageId) => {
-    setCurrentPage(pageId);
-    setShowMobileMenu(false);
   };
 
   if (loading) {
@@ -283,6 +160,7 @@ const AdminDashboard = () => {
               <p className="text-xs text-amber-300">Admin Panel</p>
             </div>
           </div>
+
           {/* Close button for mobile */}
           <button
             onClick={() => setShowMobileMenu(false)}
@@ -314,7 +192,7 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="lg:ml-64">
         {/* Header */}
-        <Header showDropdown={showDropdown}/>
+        <Header showDropdown={showDropdown} />
 
         {/* Dashboard Content */}
         <main className="p-4 sm:p-6">
@@ -333,43 +211,37 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <StatCard
                   title="Total Seats"
-                  value={dashboard?.total_seats}
+                  value={dashboard?.total_seats ?? 0}
                   icon={Armchair}
-                  trend={stats.trends.seats}
                   gradient="bg-gradient-to-br from-amber-600 to-orange-600"
                 />
                 <StatCard
                   title="Available Seats"
-                  value={dashboard?.available_seats
-}
+                  value={dashboard?.available_seats ?? 0}
                   icon={Armchair}
                   gradient="bg-gradient-to-br from-green-600 to-emerald-600"
                 />
                 <StatCard
                   title="Active Bookings"
-                  value={stats?.total_bookings}
+                  value={dashboard?.total_bookings ?? 0}
                   icon={Calendar}
-                  trend={stats.trends.bookings}
                   gradient="bg-gradient-to-br from-orange-600 to-red-600"
                 />
                 <StatCard
                   title="Monthly Revenue"
-                  value={`₹${stats.monthlyRevenue.toLocaleString()}`}
+                  value={`₹${(dashboard?.monthly_revenue ?? 0).toLocaleString()}`}
                   icon={IndianRupee}
-                  trend={stats.trends.revenue}
                   gradient="bg-gradient-to-br from-amber-700 to-amber-600"
                 />
               </div>
 
-              {/* Charts Section */}
+              {/* Charts Section (still static for now) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {/* Weekly Bookings Chart */}
                 <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-4 sm:p-6">
                   <h3 className="text-base sm:text-lg font-bold text-amber-900 mb-4">
                     Weekly Bookings
                   </h3>
-                  {/* TODO: Replace with actual weekly booking data from your API */}
-                  {/* Create an API endpoint that returns: [{ day: 'Mon', count: 45 }, ...] */}
+
                   <div className="h-48 sm:h-64 flex items-end justify-between gap-1 sm:gap-2">
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
                       (day, i) => {
@@ -397,13 +269,11 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* Revenue Trend */}
                 <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-4 sm:p-6">
                   <h3 className="text-base sm:text-lg font-bold text-amber-900 mb-4">
                     Revenue Trend (6 Months)
                   </h3>
-                  {/* TODO: Replace with actual monthly revenue data from your API */}
-                  {/* Create an API endpoint that returns: [{ month: 'Jan', revenue: 45000 }, ...] */}
+
                   <div className="h-48 sm:h-64 flex items-end justify-between gap-2 sm:gap-3">
                     {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map(
                       (month, i) => {
@@ -431,7 +301,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Bookings Table */}
+              {/* Recent Users Table (Real users) */}
               <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base sm:text-lg font-bold text-amber-900">
@@ -444,6 +314,7 @@ const AdminDashboard = () => {
                     View All →
                   </button>
                 </div>
+
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle">
                     <table className="min-w-full">
@@ -463,50 +334,53 @@ const AdminDashboard = () => {
                           </th>
                         </tr>
                       </thead>
+
                       <tbody>
-                        {/* TODO: Map through actual user data with booking information */}
-                        {/* You may want to create a getUsersWithBookings() API that returns:
-                            [{ id, name, email, current_seat, is_active, booking_details, ... }] */}
-                        {user.slice(0, 5).map((booking) => (
+                        {user.slice(0, 5).map((u) => (
                           <tr
-                            key={booking.id}
+                            key={u.id}
                             className="border-b border-amber-100 hover:bg-amber-50 transition"
                           >
                             <td className="py-3 px-4 text-xs sm:text-sm font-semibold text-amber-900">
-                              {booking.name}
+                              {u.name}
                             </td>
+
                             <td className="py-3 px-4 text-xs sm:text-sm text-amber-800 font-medium hidden sm:table-cell">
                               --
                             </td>
+
                             <td className="py-3 px-4 text-xs sm:text-sm">
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  booking.is_active
+                                  u.is_active
                                     ? "bg-green-100 text-green-800"
                                     : "bg-gray-100 text-gray-800"
                                 }`}
                               >
-                                {booking.is_active ? "Active" : "Inactive"}
+                                {u.is_active ? "Active" : "Inactive"}
                               </span>
                             </td>
+
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-1 sm:gap-2">
                                 <button
-                                  onClick={() => handleViewUser(booking.id)}
+                                  onClick={() => handleViewUser(u.id)}
                                   className="p-1.5 hover:bg-amber-100 rounded-lg transition"
                                   title="View"
                                 >
                                   <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-amber-700" />
                                 </button>
+
                                 <button
-                                  onClick={() => handleEditUser(booking.id)}
+                                  onClick={() => handleEditUser(u.id)}
                                   className="p-1.5 hover:bg-amber-100 rounded-lg transition"
                                   title="Edit"
                                 >
                                   <Edit className="w-3 h-3 sm:w-4 sm:h-4 text-orange-700" />
                                 </button>
+
                                 <button
-                                  onClick={() => handleDeleteUser(booking.id)}
+                                  onClick={() => handleDeleteUser(u.id)}
                                   className="p-1.5 hover:bg-red-100 rounded-lg transition"
                                   title="Delete"
                                 >
@@ -516,6 +390,17 @@ const AdminDashboard = () => {
                             </td>
                           </tr>
                         ))}
+
+                        {user.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="py-6 text-center text-amber-700 font-semibold"
+                            >
+                              No users found.
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -580,7 +465,6 @@ const AdminDashboard = () => {
                   <h4 className="text-lg sm:text-xl font-bold text-amber-900 mb-2">
                     Location
                   </h4>
-                  {/* TODO: Replace with dynamic location from settings/config */}
                   <p className="text-sm sm:text-base text-amber-700 font-medium">
                     123 Library Street, Lucknow, UP
                   </p>
@@ -591,7 +475,6 @@ const AdminDashboard = () => {
                   <h4 className="text-lg sm:text-xl font-bold text-amber-900 mb-2">
                     Hours
                   </h4>
-                  {/* TODO: Replace with dynamic hours from settings/config */}
                   <p className="text-sm sm:text-base text-amber-700 font-medium">
                     Mon - Sun: 6:00 AM - 11:00 PM
                   </p>
@@ -602,7 +485,6 @@ const AdminDashboard = () => {
                   <h4 className="text-lg sm:text-xl font-bold text-amber-900 mb-2">
                     Contact
                   </h4>
-                  {/* TODO: Replace with dynamic contact from settings/config */}
                   <p className="text-sm sm:text-base text-amber-700 font-medium">
                     +91 98765 43210
                   </p>
@@ -610,38 +492,40 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-          {currentPage == "bookings" ? <BookingsPage/> : null}
-          {currentPage == "seats" ? <SeatManagement/> : null}
-          {currentPage == "users" ? <AdminUserManagement/> : null}
+
+          {currentPage === "bookings" ? <BookingsPage /> : null}
+          {currentPage === "seats" ? <SeatManagement /> : null}
+          {currentPage === "users" ? <AdminUserManagement /> : null}
 
           {/* Other pages placeholder */}
-          {currentPage !== "dashboard" && (
-            <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-8 sm:p-12 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-amber-300">
-                  {menuItems.find((m) => m.id === currentPage)?.icon &&
-                    React.createElement(
-                      menuItems.find((m) => m.id === currentPage).icon,
-                      {
-                        className: "w-8 h-8 text-amber-700",
-                      }
-                    )}
+          {currentPage !== "dashboard" &&
+            currentPage !== "bookings" &&
+            currentPage !== "seats" &&
+            currentPage !== "users" && (
+              <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-8 sm:p-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-amber-300">
+                    {menuItems.find((m) => m.id === currentPage)?.icon &&
+                      React.createElement(
+                        menuItems.find((m) => m.id === currentPage).icon,
+                        { className: "w-8 h-8 text-amber-700" }
+                      )}
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-amber-900 mb-2">
+                    {menuItems.find((m) => m.id === currentPage)?.label}
+                  </h3>
+                  <p className="text-sm sm:text-base text-amber-700 font-medium mb-4">
+                    This page is under construction. Click Dashboard to return.
+                  </p>
+                  <button
+                    onClick={() => handlePageChange("dashboard")}
+                    className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-2 rounded-lg hover:from-amber-700 hover:to-orange-700 transition font-bold shadow-md"
+                  >
+                    Back to Dashboard
+                  </button>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-amber-900 mb-2">
-                  {menuItems.find((m) => m.id === currentPage)?.label}
-                </h3>
-                <p className="text-sm sm:text-base text-amber-700 font-medium mb-4">
-                  This page is under construction. Click Dashboard to return.
-                </p>
-                <button
-                  onClick={() => handlePageChange("dashboard")}
-                  className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-2 rounded-lg hover:from-amber-700 hover:to-orange-700 transition font-bold shadow-md"
-                >
-                  Back to Dashboard
-                </button>
               </div>
-            </div>
-          )}
+            )}
         </main>
       </div>
     </div>

@@ -12,7 +12,6 @@ import { NavLink } from "react-router-dom";
 const TopNavBar = () => {
   const navData = [
   { name: "Home", path: "/dashboard/home", icon: Home },
-  { name: "Seats", path: "/dashboard/seats", icon: Armchair },
   { name: "Bookings", path: "/dashboard/bookings", icon: Calendar },
   { name: "My Bookings", path: "/dashboard/my-bookings", icon: ClipboardClock },
   { name: "Profile", path: "/dashboard/profile", icon: User, isProfile: true },
