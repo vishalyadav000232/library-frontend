@@ -8,6 +8,7 @@ import {
   Filter,
   Search,
 } from "lucide-react";
+
 import { getAllSeats } from "../Api/seat_services";
 import { getAllShift } from "../Api/shift";
 import { getCurrentUser } from "../Api/usrs";
@@ -15,173 +16,186 @@ import { createBooking } from "../Api/booking";
 
 export default function SeatBookingPage() {
   // ---------------- STATE ----------------
-  const [selectedShift, setSelectedShift] = useState("all");
+  const [selectedShift, setSelectedShift] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("all");
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [currentUser , setCurrentUser] = useState({})
 
-  // ---------------- SHIFTS DATA ----------------
-  const shifts = [
-    { id: "all", name: "All Shifts", time: "" },
-    { id: "morning", name: "Morning", time: "6:00 AM - 12:00 PM" },
-    { id: "afternoon", name: "Afternoon", time: "12:00 PM - 6:00 PM" },
-    { id: "evening", name: "Evening", time: "6:00 PM - 11:00 PM" },
-    { id: "fullday", name: "Full Day", time: "6:00 AM - 11:00 PM" },
-  ];
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // ---------------- SEATS DATA (API) ----------------
   const [seats, setSeats] = useState([]);
-  const [selectedSeats, setSelectedSeats] = useState([]);
-  const [shift, setShift] = useState([]);
-  const [shifData, setShiftData] = useState({});
+  
+  const [selectedSeat, setSelectedSeat] = useState(null);
 
-  //! Fetch all seats
+  const [shiftList, setShiftList] = useState([]);
+  const [selectedShiftData, setSelectedShiftData] = useState(null);
 
+  const [loadingSeats, setLoadingSeats] = useState(false);
+  const [loadingBooking, setLoadingBooking] = useState(false);
+
+  //! ---------------- Fetch Current User ----------------
   useEffect(() => {
-    const fetchSeat = async () => {
+    let isMounted = true;
+
+    const fetchCurrentUser = async () => {
       try {
-        const res = await getAllSeats();
-
-        // API response can be [] or {data: []}
-        const seatList = Array.isArray(res) ? res : res?.data || [];
-
-        // ✅ Convert API seats -> UI format
-        const formattedSeats = seatList.map((s, index) => {
-          const seatNumber = s.seat_number || "NA";
-          const section = seatNumber?.[0] || "A";
-
-          // floor auto assign (demo logic)
-          const floor =
-            index < 8
-              ? "Ground Floor"
-              : index < 16
-                ? "First Floor"
-                : index < 24
-                  ? "Second Floor"
-                  : "Third Floor";
-
-          // premium/standard logic
-          const type = index % 12 >= 6 ? "Premium" : "Standard";
-
-          return {
-            id: s.id,
-            seatNumber,
-            section,
-            floor,
-
-            isAvailable: s.is_active,
-
-            type,
-            price: type === "Premium" ? 80 : 50,
-          };
-        });
-
-        setSeats(formattedSeats);
+        const user = await getCurrentUser();
+        if (isMounted) setCurrentUser(user);
       } catch (error) {
-        console.log("failed to fetch seat", error);
+        console.log("Current user fetching failed", error);
       }
     };
 
-    fetchSeat();
+    fetchCurrentUser();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  //! Fetch shifts
- 
+  //! ---------------- Fetch Shifts ----------------
   useEffect(() => {
     const fetchShift = async () => {
       try {
         const res = await getAllShift();
-        console.log(res);
-        setShift(res);
+        setShiftList(Array.isArray(res) ? res : res?.data || []);
       } catch (error) {
-        console.log(error);
+        console.log("Shift fetch failed", error);
       }
     };
+
     fetchShift();
   }, []);
 
-  //! Get Current user 
-
+  // ---------------- Fetch Seats ----------------
+  // IMPORTANT: If you have shift+date based API like:
+  // getAllSeats({ shift_id, date })
+  // then use it here.
   useEffect(() => {
-  let isMounted = true;
+    const fetchSeat = async () => {
+      setLoadingSeats(true);
+      try {
+        const res = await getAllSeats(); 
+        const seatList = Array.isArray(res) ? res : res?.data || [];
 
-  const fetchCurrentUser = async () => {
-    try {
-      const user = await getCurrentUser();
-      if (isMounted) setCurrentUser(user);
-    } catch (error) {
-      console.log("Current user fetching failed", error);
-    }
-  };
+        const formattedSeats = seatList.map((s) => {
+          const seatNumber = s.seat_number || "NA";
+          const section = seatNumber?.[0] || "A";
 
-  fetchCurrentUser();
+          return {
+            id: s.id,
+            seatNumber: seatNumber,
+            section: section,
+            floor: s.floor || "Ground Floor",
+            type: s.seat_type || "Standard",
+            price: Number(s.price || 0),
+            isAvailable: Boolean(s.is_active),
+          };
+        });
 
-  return () => {
-    isMounted = false;
-  };
-}, []);
+        setSeats(formattedSeats);
 
-  //! ---------------- HANDLERS ----------------
+        // if selected seat becomes unavailable after refresh -> remove selection
+        if (selectedSeat) {
+          const stillExists = formattedSeats.find(
+            (x) => x.id === selectedSeat.id,
+          );
+          if (!stillExists || !stillExists.isAvailable) {
+            setSelectedSeat(null);
+          }
+        }
+      } catch (error) {
+        console.log("failed to fetch seat", error);
+      } finally {
+        setLoadingSeats(false);
+      }
+    };
 
+    fetchSeat();
+    
+  }, [selectedShift, selectedDate]);
+
+  // ---------------- HANDLERS ----------------
   const handleSeatSelect = (seat) => {
     if (!seat.isAvailable) return;
-    console.log(seat.id);
-    const isSelected = selectedSeats.find((s) => s.id === seat.id);
-
-    if (isSelected) {
-      setSelectedSeats(selectedSeats.filter((s) => s.id !== seat.id));
+    
+    if (selectedSeat?.id === seat.id) {
+      setSelectedSeat(null);
     } else {
-      setSelectedSeats([...selectedSeats, seat]);
+      setSelectedSeat(seat);
     }
   };
 
-  const haandlShift = (shift) => {
-    setShiftData(shift);
+  const handleShiftChange = (shiftId) => {
+    setSelectedShift(shiftId);
+
+    const selected = shiftList.find((s) => s.id === shiftId);
+    setSelectedShiftData(selected || null);
+
+    
+    setSelectedSeat(null);
   };
 
- const handleBooking = async () => {
-  if (selectedSeats.length === 0) {
-    alert("Please select at least one seat");
-    return;
-  }
+  const handleBooking = async () => {
+    if (!selectedSeat) {
+      alert("Please select a seat");
+      return;
+    }
 
-  try {
-    // Example: currentUser.id, selectedShift.id, selectedDate
     const userId = currentUser?.id;
-    const shiftId = shifData?.id; 
-    const date = selectedDate; 
+    const shiftId = selectedShiftData?.id;
+    const date = selectedDate;
 
     if (!userId || !shiftId || !date) {
       alert("Missing user / shift / date");
       return;
     }
 
-    const requests = selectedSeats.map((seat) => {
-      const payload = {
-        user_id: userId,
-        seat_id: String(seat.id),
-        shift_id: String(shiftId),
-        start_date: date,
-        end_date: date,
-      };
+    const payload = {
+      user_id: String(userId),
+      seat_id: String(selectedSeat.id),
+      shift_id: String(shiftId),
+      start_date: date,
+      end_date: date,
+    };
 
-      return createBooking(payload);
-    });
+    try {
+      setLoadingBooking(true);
+      await createBooking(payload);
 
-    await Promise.all(requests);
+      alert(`Booking confirmed for seat ${selectedSeat.seatNumber} ✅`);
+      setSelectedSeat(null);
 
-    alert(`Booking confirmed for ${selectedSeats.length} seat(s)!`);
-    setSelectedSeats([]);
-  } catch (error) {
-    console.log("Booking failed:", error);
-    alert("Booking failed!");
-  }
-};
+      // refresh seats after booking
+      const res = await getAllSeats();
+      const seatList = Array.isArray(res) ? res : res?.data || [];
 
+      const formattedSeats = seatList.map((s) => {
+        const seatNumber = s.seat_number || "NA";
+        const section = seatNumber?.[0] || "A";
+
+        return {
+          id: s.id,
+          seatNumber: seatNumber,
+          section: section,
+          floor: s.floor || "Ground Floor",
+          type: s.seat_type || "Standard",
+          price: Number(s.price || 0),
+          isAvailable: Boolean(s.is_active),
+        };
+      });
+
+      setSeats(formattedSeats);
+    } catch (error) {
+      console.log("Booking failed:", error);
+      alert(error?.response?.data?.detail || "Booking failed ❌");
+    } finally {
+      setLoadingBooking(false);
+    }
+  };
 
   // ---------------- FILTERING ----------------
   const filteredSeats = useMemo(() => {
@@ -202,13 +216,15 @@ export default function SeatBookingPage() {
   }, [seats, selectedFloor, searchQuery]);
 
   const availableCount = filteredSeats.filter((s) => s.isAvailable).length;
-  const totalPrice = selectedSeats.reduce(
-    (sum, seat) => sum + (seat.price || 0),
-    0,
-  );
+
+  const totalPrice = selectedSeat?.price || 0;
 
   // Floors list for grouping
-  const floors = ["Ground Floor", "First Floor", "Second Floor", "Third Floor"];
+ 
+  const floors = useMemo(() => {
+    const uniqueFloors = [...new Set(filteredSeats.map((s) => s.floor))];
+    return uniqueFloors;
+  }, [filteredSeats]);
 
   // ---------------- UI ----------------
   return (
@@ -226,7 +242,9 @@ export default function SeatBookingPage() {
                   Book Your Seat
                 </h1>
                 <p className="text-sm text-amber-700">
-                  {availableCount} seats available
+                  {loadingSeats
+                    ? "Loading seats..."
+                    : `${availableCount} seats available`}
                 </p>
               </div>
             </div>
@@ -254,7 +272,10 @@ export default function SeatBookingPage() {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedSeat(null);
+                }}
                 min={new Date().toISOString().split("T")[0]}
                 className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
               />
@@ -269,18 +290,12 @@ export default function SeatBookingPage() {
 
               <select
                 value={selectedShift}
-                onChange={(e) => {
-                  const shiftId = e.target.value;
-                  setSelectedShift(shiftId);
-
-                  const selected = shift.find((s) => s.id === shiftId);
-                  if (selected) haandlShift(selected);
-                }}
+                onChange={(e) => handleShiftChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm appearance-none"
               >
                 <option value="">Select Shift</option>
 
-                {shift.map((s) => (
+                {shiftList.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} {`${s.start_time} - ${s.end_time}`}
                   </option>
@@ -302,6 +317,7 @@ export default function SeatBookingPage() {
                 <option value="Ground Floor">Ground Floor</option>
                 <option value="First Floor">First Floor</option>
                 <option value="Second Floor">Second Floor</option>
+                <option value="Third Floor">Third Floor</option>
               </select>
             </div>
 
@@ -324,14 +340,14 @@ export default function SeatBookingPage() {
       </div>
 
       {/* Shift Info Banner */}
-      {selectedShift !== "all" && (
+      {selectedShiftData && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 mt-4">
           <div className="bg-amber-100 border-l-4 border-amber-600 p-4 rounded-lg">
             <p className="text-amber-900 font-medium">
-              Selected: {shift.find((s) => s.id === selectedShift)?.name}
+              Selected: {selectedShiftData?.name}
             </p>
             <p className="text-amber-700 text-sm">
-              {shifts.find((s) => s.id === selectedShift)?.time}
+              {selectedShiftData?.start_time} - {selectedShiftData?.end_time}
             </p>
           </div>
         </div>
@@ -371,9 +387,7 @@ export default function SeatBookingPage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {floorSeats.map((seat) => {
-                  const isSelected = selectedSeats.find(
-                    (s) => s.id === seat.id,
-                  );
+                  const isSelected = selectedSeat?.id === seat.id;
 
                   return (
                     <button
@@ -428,12 +442,12 @@ export default function SeatBookingPage() {
       </div>
 
       {/* Booking Summary - Fixed Bottom */}
-      {selectedSeats.length > 0 && (
+      {selectedSeat && (
         <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t-2 border-amber-200 shadow-2xl z-30 p-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-center md:text-left">
               <p className="text-sm text-amber-700">
-                {selectedSeats.length} seat(s) selected
+                Selected Seat: <b>{selectedSeat.seatNumber}</b>
               </p>
               <p className="text-2xl font-bold text-amber-900">
                 Total: ₹{totalPrice}
@@ -442,9 +456,10 @@ export default function SeatBookingPage() {
 
             <button
               onClick={handleBooking}
-              className="w-full md:w-auto bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold px-8 py-3 rounded-lg hover:scale-105 transition shadow-lg"
+              disabled={loadingBooking}
+              className="w-full md:w-auto bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold px-8 py-3 rounded-lg hover:scale-105 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Confirm Booking
+              {loadingBooking ? "Booking..." : "Confirm Booking"}
             </button>
           </div>
         </div>

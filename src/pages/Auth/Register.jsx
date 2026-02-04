@@ -46,7 +46,7 @@ export default function SignupPage() {
         password,
       };
 
-      const res = await register_user()
+      const res = await register_user(payload)
 
       console.log("Signup Success:", res);
 
@@ -72,7 +72,7 @@ export default function SignupPage() {
   };
 
   // ---------------- BACKGROUND BOOKS ----------------
-  const books = useMemo(() => generateBooks(), []);
+  const _books = useMemo(() => generateBooks(), []);
 
   // ---------------- UI ----------------
   return (

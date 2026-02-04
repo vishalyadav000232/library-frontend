@@ -40,6 +40,7 @@ const handleSubmit = async (e) => {
   }
 
   // OAuth2 requires "username"
+  
   const user_data = { 
     email, 
     password 
@@ -83,7 +84,7 @@ const handleSubmit = async (e) => {
 
   // ---------------- BACKGROUND BOOKS ----------------
 
-  const books = useMemo(() => generateBooks(), []);
+  const _books = useMemo(() => generateBooks(), []);
 
   // ---------------- UI ----------------
   return (

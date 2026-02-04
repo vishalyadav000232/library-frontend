@@ -58,6 +58,7 @@ const TopNavBar = () => {
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition
                     ${
+                      
                       item.isProfile
                         ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-2 hover:scale-105"
                         : isActive
