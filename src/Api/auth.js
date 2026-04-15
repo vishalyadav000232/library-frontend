@@ -1,5 +1,6 @@
 import authApi from "./Api";
 
+
 export const login_user = async (loginData) => {
   try {
     const formData = new URLSearchParams();
@@ -13,10 +14,15 @@ export const login_user = async (loginData) => {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
+        withCredentials: true   
       }
     );
 
+    
+    localStorage.setItem("access_token", res.data.access_token);
+
     return res.data;
+
   } catch (error) {
     console.error("Login failed:", error);
     throw error;

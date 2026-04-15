@@ -9,7 +9,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+
 
 import generateBooks from "../../utils/genrate_color";
 import Decorarive from "../../ui/Decorarive";
@@ -57,12 +57,15 @@ const handleSubmit = async (e) => {
     localStorage.setItem("role", data.role);
 
     const role = data.role?.toUpperCase();
+    console.log(role)
 
     if (role === "ADMIN") {
-      navigate("/admin");
-    } else {
-      navigate("/dashboard");
-    }
+  navigate("/admin", { replace: true });
+} else {
+  setTimeout(() => {
+    navigate("/dashboard", { replace: true });
+  }, 500);
+}
   } catch (err) {
     setError(err.response?.data?.detail || "Invalid email or password");
   } finally {

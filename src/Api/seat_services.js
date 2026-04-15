@@ -5,7 +5,7 @@ import authApi from "./Api";
 // -----------------------------
 export const getAllSeats = async () => {
   try {
-    const res = await authApi.get("/seats");
+    const res = await authApi.get("/seats/");
     return res.data;
   } catch (error) {
     console.error("Failed to fetch seats:", error);

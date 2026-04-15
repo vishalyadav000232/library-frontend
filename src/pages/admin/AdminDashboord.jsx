@@ -66,16 +66,7 @@ const AdminDashboard = () => {
     loadAll();
   }, []);
 
-  const menuItems = [
-    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "seats", icon: Armchair, label: "Seats Management" },
-    { id: "bookings", icon: Calendar, label: "Bookings" },
-    { id: "users", icon: Users, label: "Users" },
-    { id: "payments", icon: CreditCard, label: "Payments" },
-    { id: "shifts", icon: Clock, label: "Shifts" },
-    { id: "reports", icon: FileText, label: "Reports" },
-    { id: "settings", icon: Settings, label: "Settings" },
-  ];
+
 
   // Close mobile menu when changing pages
   const handlePageChange = (pageId) => {

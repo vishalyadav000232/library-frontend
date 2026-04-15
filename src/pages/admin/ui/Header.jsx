@@ -8,10 +8,15 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { getUser } from "../../../Api/admin";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ showDropdown }) => {
 const [user, setUser] = useState(null);
 const [loading, setLoading] = useState(true);
+
+
+const navigarion = useNavigate();
+
 
 useEffect(() => {
   const fetchUser = async () => {
@@ -29,6 +34,10 @@ useEffect(() => {
   fetchUser();
 }, []);
 
+
+const handleAdminProfileClick= ()=>{
+  navigarion("/admin/profile")
+}
   return (
     <header className="sticky top-0 h-16 bg-white border-b-2 border-amber-200 z-30 shadow-md">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
@@ -63,7 +72,7 @@ useEffect(() => {
           {/* User Profile */}
           <div className="relative">
             <button
-              onClick={() => setShowDropdown(!showDropdown)}
+              onClick={() => handleAdminProfileClick()}
               className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 hover:bg-amber-100 rounded-lg transition"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-orange-600 to-amber-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm">

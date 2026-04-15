@@ -49,7 +49,6 @@ export default function SignupPage() {
       const res = await register_user(payload)
 
       console.log("Signup Success:", res);
-
       navigate("/dashboard");
     } catch (err) {
       console.error(err);

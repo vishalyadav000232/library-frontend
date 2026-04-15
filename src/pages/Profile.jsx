@@ -7,14 +7,21 @@ import { useNavigate } from "react-router-dom";
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+
   const navigation = useNavigate();
+
+
+
   // ✅ Fetch Current User
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchUser = async () => {
       try {
         const res = await getCurrentUser();
+        console.log(res)
         if (isMounted) setUser(res);
       } catch (error) {
         console.log("Profile user fetch failed:", error);
@@ -32,7 +39,7 @@ const Profile = () => {
 
   // ✅ Logout Handler
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
     navigation("/");
     
   };

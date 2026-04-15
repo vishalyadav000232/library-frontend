@@ -16,8 +16,9 @@ export const createBooking = async (payload) => {
 //! ✅ GET ALL BOOKINGS (Admin)
 export const getAllBookings = async () => {
   try {
-    const res = await authApi.get("/bookings");
+    const res = await authApi.get("bookings/all");
     return res.data;
+  
   } catch (error) {
     console.error("Get All Bookings Failed:", error.response?.data || error.message);
     throw error;

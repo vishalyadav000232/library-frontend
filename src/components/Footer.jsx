@@ -15,12 +15,12 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   const quickLinks = [
-    { name: "Home", path: "/home" },
-    { name: "About Us", path: "/about" },
-    { name: "Services", path: "/services" },
-    { name: "Book a Seat", path: "/seats" },
-    { name: "My Bookings", path: "/my-bookings" },
-    { name: "Contact", path: "/contact" },
+    { name: "Home", path: "/dashboard/home" },
+    { name: " Bookings", path: "/dashboard/bookings" },
+    { name: "Services", path: "/dashboard/services" },
+    { name: "Book a Seat", path: "/dashboard/seats" },
+    { name: "My Bookings", path: "/dashboard/my-bookings" },
+    { name: "Contact", path: "/dashboard/contact" },
   ];
 
   const resources = [

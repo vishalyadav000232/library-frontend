@@ -12,30 +12,30 @@ import {
   ChevronRight,
   RefreshCw,
   IndianRupee,
+  Newspaper,
 } from "lucide-react";
-import { getAllBookings } from "../../Api/booking";
+import { cancelBooking, getAllBookings } from "../../Api/booking";
+import StatCard from "./ui/BookingStateCard";
+import BookingModel from "./ui/BookingModel";
+import BookingDetailsModal from "./ui/BookingModel";
+import CancelBookingModal from "./ui/CancelModel";
 
 // ✅ REAL API IMPORTS
-
 
 const BookingsPage = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
     shift: "all",
     date: "",
   });
-
   const [currentPage, setCurrentPage] = useState(1);
 
   // Stats
@@ -47,27 +47,26 @@ const BookingsPage = () => {
     cancelled: 0,
   });
 
-  // ✅ LOAD BOOKINGS (REAL API)
+//! fetching the bookings from backend
   const loadBookings = async () => {
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      const data = await getAllBookings();
 
-      // 🔥 Backend response shape handle:
-      // Sometimes backend returns: { bookings: [] }
-      // Sometimes returns: []
+      const data = await getAllBookings();
+     
+
       const list = Array.isArray(data) ? data : data?.bookings || [];
 
       setBookings(list);
+     
 
-      // Stats calculate
+    
       const newStats = list.reduce(
         (acc, booking) => {
           acc.total++;
-
           const st = (booking?.status || "").toLowerCase();
           if (st === "active") acc.active++;
           else if (st === "pending") acc.pending++;
@@ -76,13 +75,16 @@ const BookingsPage = () => {
 
           return acc;
         },
-        { total: 0, active: 0, pending: 0, completed: 0, cancelled: 0 }
+        { total: 0, active: 0, pending: 0, completed: 0, cancelled: 0 },
       );
 
       setStats(newStats);
+      console.log(newStats)
     } catch (err) {
       const msg =
-        err?.response?.data?.detail || err?.message || "Failed to load bookings";
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to load bookings";
       setError(msg);
       console.error("Failed to load bookings:", err);
     } finally {
@@ -146,7 +148,7 @@ const BookingsPage = () => {
     );
   };
 
-  // ---------------- CANCEL BOOKING (REAL API) ----------------
+  //! ---------------- CANCEL BOOKING (REAL API) ----------------
   const handleCancelBooking = async (bookingId) => {
     try {
       setError("");
@@ -163,27 +165,15 @@ const BookingsPage = () => {
       loadBookings();
     } catch (err) {
       const msg =
-        err?.response?.data?.detail || err?.message || "Failed to cancel booking";
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Failed to cancel booking";
       setError(msg);
       console.error("Failed to cancel booking:", err);
       setTimeout(() => setError(""), 3000);
     }
   };
 
-  // ---------------- STATS CARD ----------------
-  const StatCard = ({ label, value, color, icon: Icon }) => (
-    <div
-      className={`${color} rounded-xl p-4 border-2 shadow-md hover:scale-105 transition-all`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium opacity-80 mb-1">{label}</p>
-          <h3 className="text-2xl font-bold">{value}</h3>
-        </div>
-        <Icon className="w-8 h-8 opacity-80" />
-      </div>
-    </div>
-  );
 
   // ---------------- FILTERING (Frontend) ----------------
   const filteredBookings = useMemo(() => {
@@ -206,15 +196,14 @@ const BookingsPage = () => {
         filters.shift === "all" ||
         shift === String(filters.shift || "").toLowerCase();
 
-      const dateValue = booking?.date
-        ? String(booking.date).slice(0, 10)
-        : "";
+      const dateValue = booking?.date ? String(booking.date).slice(0, 10) : "";
       const matchesDate = !filters.date || dateValue === filters.date;
 
       return matchesSearch && matchesStatus && matchesShift && matchesDate;
     });
   }, [bookings, filters]);
 
+  console.log(filteredBookings)
   // ---------------- PAGINATION (Simple Frontend) ----------------
   const pageSize = 10;
   const totalPages = Math.ceil(filteredBookings.length / pageSize) || 1;
@@ -223,6 +212,7 @@ const BookingsPage = () => {
     const start = (currentPage - 1) * pageSize;
     return filteredBookings.slice(start, start + pageSize);
   }, [filteredBookings, currentPage]);
+
 
   useEffect(() => {
     setCurrentPage(1);
@@ -365,7 +355,9 @@ const BookingsPage = () => {
           {loading ? (
             <div className="p-12 text-center">
               <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-amber-800 font-semibold">Loading bookings...</p>
+              <p className="text-amber-800 font-semibold">
+                Loading bookings...
+              </p>
             </div>
           ) : (
             <>
@@ -406,33 +398,38 @@ const BookingsPage = () => {
                   <tbody>
                     {paginatedBookings.map((booking) => {
                       const bookingId =
-                        booking?.bookingId || booking?.id || "N/A";
+                        booking.booking_id || booking.id || "N/A";
 
                       const userName =
                         booking?.userName || booking?.user?.name || "Unknown";
                       const userEmail =
                         booking?.userEmail || booking?.user?.email || "-";
 
-                      const seat =
-                        booking?.seat || booking?.seat_number || "-";
-                      const seatFloor = booking?.seatFloor || booking?.floor || "-";
+                      const seat = booking?.seat.seat_number || booking?.seat?.seat_number || "-";
+                      const seatFloor =
+                        booking?.seatFloor || booking?.seat?.floor || "-";
 
-                      const shift = booking?.shift || "-";
-                      const shiftTime = booking?.shiftTime || "-";
+                      const shift = booking?.shift?.name || "-";
+                      const shiftTime = booking?.shift?.start_time || "-";
 
-                      const dateStr = booking?.date
-                        ? new Date(booking.date).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "-";
+                      const dateStr = booking?.booking_date
+                        ? new Date(booking.booking_date).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )
+                        : "";
 
-                      const amount = booking?.amount || booking?.price || 0;
+                      const amount = booking?.seat?.amount || booking?.price || 0;
 
                       const status = booking?.status || "pending";
                       const paymentStatus =
-                        booking?.paymentStatus || booking?.payment_status || "pending";
+                        booking?.payment?.status ||
+                        booking?.payment_status ||
+                        "bakaya";
 
                       return (
                         <tr
@@ -494,7 +491,9 @@ const BookingsPage = () => {
                             </span>
                           </td>
 
-                          <td className="py-4 px-4">{getStatusBadge(status)}</td>
+                          <td className="py-4 px-4">
+                            {getStatusBadge(status)}
+                          </td>
 
                           <td className="py-4 px-4">
                             {getPaymentBadge(paymentStatus)}
@@ -537,7 +536,8 @@ const BookingsPage = () => {
               {/* Pagination */}
               <div className="bg-amber-50 border-t-2 border-amber-200 px-6 py-4 flex items-center justify-between">
                 <p className="text-sm text-amber-800 font-medium">
-                  Showing {paginatedBookings.length} of {filteredBookings.length} bookings
+                  Showing {paginatedBookings.length} of{" "}
+                  {filteredBookings.length} bookings
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -569,232 +569,26 @@ const BookingsPage = () => {
         </div>
 
         {/* Details Modal */}
+
         {showDetailsModal && selectedBooking && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl border-2 border-amber-300 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 flex items-center justify-between rounded-t-xl">
-                <h3 className="text-2xl font-bold">Booking Details</h3>
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-sm text-amber-700 font-semibold mb-1">
-                      Booking ID
-                    </p>
-                    <p className="text-lg font-bold text-amber-900">
-                      {selectedBooking?.bookingId || selectedBooking?.id || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-amber-700 font-semibold mb-1">
-                      Status
-                    </p>
-                    {getStatusBadge(selectedBooking?.status)}
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-amber-200 pt-6">
-                  <h4 className="font-bold text-amber-900 mb-4 text-lg">
-                    User Information
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Name
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.userName ||
-                          selectedBooking?.user?.name ||
-                          "Unknown"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Email
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.userEmail ||
-                          selectedBooking?.user?.email ||
-                          "-"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-amber-200 pt-6">
-                  <h4 className="font-bold text-amber-900 mb-4 text-lg">
-                    Booking Information
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Seat Number
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.seat ||
-                          selectedBooking?.seat_number ||
-                          "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Floor
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.seatFloor ||
-                          selectedBooking?.floor ||
-                          "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Shift
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.shift || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Timing
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.shiftTime || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Date
-                      </p>
-                      <p className="font-semibold text-amber-900">
-                        {selectedBooking?.date
-                          ? new Date(selectedBooking.date).toLocaleDateString(
-                              "en-IN",
-                              { day: "2-digit", month: "long", year: "numeric" }
-                            )
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-amber-700 font-semibold mb-1">
-                        Amount
-                      </p>
-                      <p className="font-bold text-amber-900 text-lg flex items-center gap-1">
-                        <IndianRupee className="w-5 h-5" />
-                        {selectedBooking?.amount || selectedBooking?.price || 0}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-amber-200 pt-6">
-                  <h4 className="font-bold text-amber-900 mb-4 text-lg">
-                    Payment Information
-                  </h4>
-                  <div>
-                    <p className="text-sm text-amber-700 font-semibold mb-1">
-                      Payment Status
-                    </p>
-                    {getPaymentBadge(
-                      selectedBooking?.paymentStatus ||
-                        selectedBooking?.payment_status
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-amber-50 border-t-2 border-amber-200 p-6 flex gap-3 rounded-b-xl">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="flex-1 px-4 py-2 border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition font-semibold"
-                >
-                  Close
-                </button>
-
-                {String(selectedBooking?.status).toLowerCase() === "active" && (
-                  <button
-                    onClick={() => {
-                      setShowDetailsModal(false);
-                      setShowCancelModal(true);
-                    }}
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition font-semibold"
-                  >
-                    Cancel Booking
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <BookingDetailsModal
+            showDetailsModal={showDetailsModal}
+            selectedBooking={selectedBooking}
+            setShowDetailsModal={setShowDetailsModal}
+            setShowCancelModal={setShowCancelModal}
+            getStatusBadge={getStatusBadge}
+            getPaymentBadge={getPaymentBadge}
+          />
         )}
 
         {/* Cancel Modal */}
         {showCancelModal && selectedBooking && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl border-2 border-red-300 max-w-md w-full">
-              <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-t-xl">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-8 h-8" />
-                  <h3 className="text-xl font-bold">Cancel Booking</h3>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <p className="text-amber-900 mb-4">
-                  Are you sure you want to cancel booking{" "}
-                  <strong>
-                    {selectedBooking?.bookingId || selectedBooking?.id}
-                  </strong>
-                  ?
-                </p>
-
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 space-y-2">
-                  <p className="text-sm text-amber-800">
-                    <strong>Seat:</strong>{" "}
-                    {selectedBooking?.seat || selectedBooking?.seat_number || "-"}
-                  </p>
-                  <p className="text-sm text-amber-800">
-                    <strong>Date:</strong>{" "}
-                    {selectedBooking?.date
-                      ? new Date(selectedBooking.date).toLocaleDateString("en-IN")
-                      : "-"}
-                  </p>
-                  <p className="text-sm text-amber-800">
-                    <strong>Amount:</strong> ₹
-                    {selectedBooking?.amount || selectedBooking?.price || 0}
-                  </p>
-                </div>
-
-                <p className="text-sm text-red-700 mt-4 font-semibold">
-                  This action cannot be undone.
-                </p>
-              </div>
-
-              <div className="bg-amber-50 border-t-2 border-amber-200 p-6 flex gap-3 rounded-b-xl">
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-100 transition font-semibold"
-                >
-                  Keep Booking
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleCancelBooking(selectedBooking?.id || selectedBooking?.bookingId)
-                  }
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition font-semibold"
-                >
-                  Yes, Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+          <CancelBookingModal
+            showCancelModal={showCancelModal}
+            selectedBooking={selectedBooking}
+            setShowCancelModal={setShowCancelModal}
+            handleCancelBooking={handleCancelBooking}
+          />
         )}
       </div>
     </div>
