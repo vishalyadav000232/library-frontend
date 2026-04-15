@@ -6,8 +6,7 @@ const ErrorPages = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ---------------- DYNAMIC ERROR DATA ----------------
-  // Get error data from route state or fallback
+  
   const { status = 404, title = "Page Not Found", message } = location.state || {};
 
   const defaultMessage = "Oops! Looks like this page has been misplaced.";

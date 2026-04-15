@@ -17,10 +17,11 @@ authApi.interceptors.request.use(
 
     const token = localStorage.getItem("access_token")
 
+    const requestUrl = config.url || "";
     const isAuthRoute =
-      config.url.includes("/users/login") ||
-      config.url.includes("/users/signup") ||
-      config.url.includes("/users/refresh")
+      requestUrl.includes("/users/login") ||
+      requestUrl.includes("/users/signup") ||
+      requestUrl.includes("/users/refresh")
 
     if (token && !isAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`
@@ -40,11 +41,12 @@ authApi.interceptors.response.use(
   
     const originalRequest = error.config;
 
-    const isRefreshCall = originalRequest.url.includes("/users/refresh");
+    const requestUrl = originalRequest?.url || "";
+    const isRefreshCall = requestUrl.includes("/users/refresh");
 
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry &&
+      !originalRequest?._retry &&
       !isRefreshCall
     ) {
       originalRequest._retry = true;

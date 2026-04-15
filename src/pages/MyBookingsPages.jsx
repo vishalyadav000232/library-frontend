@@ -54,14 +54,15 @@ export default function MyBookingsPage() {
   // ---------------- STATS ----------------
   const stats = {
     total: bookings.length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    confirmed: bookings.filter((b) => b.status === "ACTIVE" || b.status === "confirmed").length,
     pending: bookings.filter((b) => b.status === "pending").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
+    cancelled: bookings.filter((b) => b.status === "CANCELLED" || b.status === "cancelled").length,
   };
 
   // ---------------- STATUS CONFIG ----------------
   const getStatusConfig = (status) => {
     switch (status) {
+      case "ACTIVE":
       case "confirmed":
         return {
           icon: CheckCircle2,
@@ -80,6 +81,7 @@ export default function MyBookingsPage() {
           iconColor: "text-yellow-600",
           label: "Pending",
         };
+      case "CANCELLED":
       case "cancelled":
         return {
           icon: XCircle,
@@ -125,7 +127,7 @@ export default function MyBookingsPage() {
 
   // ---------------- RENDER ----------------
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 pb-8">
+    <div className="min-h-screen bg-linear-to-b from-amber-50 to-orange-50 pb-8">
       {/* Header */}
       <div className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
@@ -159,7 +161,7 @@ export default function MyBookingsPage() {
           <div
             className={`${
               showFilters ? "block" : "hidden"
-            } md:block space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4`}
+            } space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4`}
           >
             <div>
               <label className="block text-sm font-medium text-amber-900 mb-1">
@@ -185,10 +187,11 @@ export default function MyBookingsPage() {
                 className="w-full px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm appearance-none"
               >
                 <option value="all">All Shifts</option>
-                <option value="1">Morning</option>
-                <option value="2">Afternoon</option>
-                <option value="3">Evening</option>
-                <option value="4">Full Day</option>
+                {[...new Set(bookings.map((booking) => booking.shift_id))].map((shiftId) => (
+                  <option key={shiftId} value={shiftId}>
+                    {shiftId.slice(0, 8)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -237,8 +240,8 @@ export default function MyBookingsPage() {
               You haven't made any seat reservations yet.
             </p>
             <button
-              onClick={() => (window.location.href = "/book-seat")}
-              className="bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold px-8 py-3 rounded-lg hover:scale-105 transition shadow-lg"
+              onClick={() => (window.location.href = "/dashboard/bookings")}
+              className="bg-linear-to-r from-amber-600 to-orange-600 text-white font-semibold px-8 py-3 rounded-lg hover:scale-105 transition shadow-lg"
             >
               Book a Seat Now
             </button>
@@ -265,10 +268,10 @@ export default function MyBookingsPage() {
                         </div>
                         <div>
                           <h3 className="text-2xl font-bold text-amber-900">
-                            {booking.name}
+                            Seat {booking.seat_id?.slice(0, 8) || "N/A"}
                           </h3>
                           <p className="text-sm text-amber-700">
-                            {booking.floor || "Floor info"}
+                            Shift: {booking.shift_id?.slice(0, 8) || "N/A"}
                           </p>
                         </div>
                       </div>
@@ -319,7 +322,7 @@ export default function MyBookingsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleViewDetails(booking)}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white font-semibold py-2 px-4 rounded-lg hover:scale-105 transition shadow-md text-sm"
+                        className="flex-1 flex items-center justify-center gap-2 bg-linear-to-r from-amber-600 to-orange-600 text-white font-semibold py-2 px-4 rounded-lg hover:scale-105 transition shadow-md text-sm"
                       >
                         <Eye className="w-4 h-4" />
                         View Details
@@ -347,8 +350,7 @@ export default function MyBookingsPage() {
                   {/* Footer */}
                   <div className="px-4 py-2 bg-amber-50 border-t border-amber-100">
                     <p className="text-xs text-amber-600">
-                      Booked on{" "}
-                      {new Date(booking.created_at || booking.booking_date).toLocaleDateString("en-US", {
+                      Booking date: {new Date(booking.start_date).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
