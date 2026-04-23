@@ -8,10 +8,9 @@ const authApi = axios.create({
   withCredentials: true
 })
 
+let isRefreshing = false;
+let refreshPromise = null;
 
-// ===============================
-// REQUEST INTERCEPTOR
-// ===============================
 authApi.interceptors.request.use(
   (config) => {
 
@@ -51,31 +50,32 @@ authApi.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = authApi.post("/users/refresh", {}, { withCredentials: true })
+          .then((res) => {
+            const newAccess = res.data.access_token;
+            if (newAccess) {
+              localStorage.setItem("access_token", newAccess);
+            }
+            return newAccess;
+          })
+          .catch((refreshError) => {
+            console.log("Session expired. Please login again.");
+            localStorage.removeItem("access_token");
+            throw refreshError;
+          })
+          .finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
+      }
+
       try {
-        const res = await authApi.post("/users/refresh",
-          {},
-          { withCredentials: true }
-        );
-        console.log(res)
-
-        const newAccess = res.data.access_token;
-
-        if (!newAccess) {
-          throw new Error("No access token returned");
-        }
-
-        localStorage.setItem("access_token", newAccess);
-
+        const newAccess = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-
         return authApi(originalRequest);
-
       } catch (refreshError) {
-        console.log("Session expired. Please login again.");
-
-        localStorage.removeItem("access_token");
-        // window.location.href = "/login";
-
         return Promise.reject(refreshError);
       }
     }
