@@ -5,7 +5,9 @@ export default function Loader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    let interval;
+
+    interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
@@ -19,21 +21,29 @@ export default function Loader() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+    <div className="flex items-center justify-center w-full h-full">
       <div className="text-center">
-        {/* Animated Book Icon */}
-        <div className="relative mb-8">
+
+  
+        <div className="relative mb-8 flex items-center justify-center">
+          
+      
           <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full blur-2xl opacity-30 animate-pulse" />
-          <div className="relative bg-gradient-to-br from-amber-100 to-orange-100 p-8 rounded-3xl shadow-2xl border-2 border-amber-200">
-            <BookOpen className="w-20 h-20 text-amber-700 animate-bounce" />
-          </div>
+
+    
+          
+            <BookOpen className="w-16 h-16 text-amber-700 animate-bounce" />
+          
+
         </div>
 
         {/* Library Name */}
         <h1 className="text-4xl md:text-5xl font-bold text-amber-900 mb-2">
-          Yadav Library
+          Library
         </h1>
-        <p className="text-amber-700 text-lg mb-8">Your Reading Haven</p>
+        <p className="text-amber-700 text-sm mb-8">
+          Your Reading Haven
+        </p>
 
         {/* Progress Bar */}
         <div className="w-80 max-w-full mx-auto">

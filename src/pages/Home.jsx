@@ -1,52 +1,87 @@
-
-import { BookOpen, User, ChevronRight  ,Armchair , Calendar ,Clock, Phone, MapPin} from "lucide-react";
-import React from 'react'
+import { BookOpen, User, ChevronRight, Armchair, Calendar, Clock, Phone, MapPin } from "lucide-react";
+import React, { useEffect, useState } from 'react';
 import Footer from "../components/Footer";
 import { useNavigate } from "react-router-dom";
-
+import useSeatSocket from "../Api/seatWebsocketService";
+import { getAllSeats } from "../Api/seat_services";
 
 const Home = () => {
-const navigate = useNavigate()
+
+  const navigate = useNavigate();
+
+  // ✅ NEW: Seat state
+  const [seats, setSeats] = useState([]);
+
+  // ✅ NEW: Fetch initial seats
+  useEffect(() => {
+    const fetchSeats = async () => {
+      try {
+        const res = await getAllSeats();
+        const data = await res.json();
+        setSeats(data);
+      } catch (err) {
+        console.error("Failed to fetch seats", err);
+      }
+    };
+
+    fetchSeats();
+  }, []);
+
   const services = [
-{
-  icon: BookOpen,
-  title: "Vast Collection",
-  description: "Access thousands of books across all genres",
-  color: "bg-amber-100",
-  iconColor: "text-amber-700",
-},
-{
-  icon: Armchair,
-  title: "Reading Seats",
-  description: "Comfortable seating areas for focused study",
-  color: "bg-orange-100",
-  iconColor: "text-orange-700",
-},
-{
-  icon: Calendar,
-  title: "Book a Seat",
-  description: "Reserve your preferred spot in advance",
-  color: "bg-red-100",
-  iconColor: "text-red-700",
-},
-{
-  icon: Clock,
-  title: "Flexible Hours",
-  description: "Open 7 days a week for your convenience",
-  color: "bg-amber-100",
-  iconColor: "text-amber-700",
-},
-];
+    {
+      icon: BookOpen,
+      title: "Vast Collection",
+      description: "Access thousands of books across all genres",
+      color: "bg-amber-100",
+      iconColor: "text-amber-700",
+    },
+    {
+      icon: Armchair,
+      title: "Reading Seats",
+      description: "Comfortable seating areas for focused study",
+      color: "bg-orange-100",
+      iconColor: "text-orange-700",
+    },
+    {
+      icon: Calendar,
+      title: "Book a Seat",
+      description: "Reserve your preferred spot in advance",
+      color: "bg-red-100",
+      iconColor: "text-red-700",
+    },
+    {
+      icon: Clock,
+      title: "Flexible Hours",
+      description: "Open 7 days a week for your convenience",
+      color: "bg-amber-100",
+      iconColor: "text-amber-700",
+    },
+  ];
 
-const handleNavigation = ()=>{
-navigate("/dashboard/seats")
-}
+  // ✅ Existing logic (unchanged)
+  const updateSeatUI = (data) => {
+    setSeats((prev) =>
+      prev.map((seat) =>
+        seat.id === data.seat_id
+          ? { ...seat, status: data.status }
+          : seat
+      )
+    );
+  };
 
-const handleExplore = ()=>{
+  // ✅ Existing hook (unchanged)
+  useSeatSocket(updateSeatUI);
 
-}
+  const handleNavigation = () => {
+    navigate("/dashboard/seats");
+  };
+
+  const handleExplore = () => {};
+
   return (
     <div>
+
+      {/* HERO SECTION */}
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -60,14 +95,14 @@ const handleExplore = ()=>{
             </p>
             <div className="flex gap-4">
               <button
-                onClick={() => handleNavigation()}
+                onClick={handleNavigation}
                 className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:scale-105 transition flex items-center gap-2"
               >
                 Book a Seat
-                <ChevronRight  className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5" />
               </button>
               <button
-                onClick={()=> handleExplore()}
+                onClick={handleExplore}
                 className="border-2 border-amber-600 text-amber-600 px-8 py-3 rounded-lg font-semibold hover:bg-amber-50 transition"
               >
                 Explore
@@ -75,6 +110,7 @@ const handleExplore = ()=>{
             </div>
           </div>
 
+          {/* OLD UI (unchanged) */}
           <div className="relative">
             <div className="bg-gradient-to-br from-amber-200 to-orange-200 rounded-2xl p-8 shadow-2xl">
               <div className="grid grid-cols-3 gap-4">
@@ -84,7 +120,7 @@ const handleExplore = ()=>{
                     className="bg-amber-700 rounded-lg shadow-md"
                     style={{
                       height: `${Math.random() * 60 + 80}px`,
-                      opacity: `${Math.random() *1}`,
+                      opacity: `${Math.random() * 1}`,
                     }}
                   />
                 ))}
@@ -93,6 +129,10 @@ const handleExplore = ()=>{
           </div>
         </div>
       </section>
+
+     
+
+      {/* SERVICES */}
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -122,7 +162,9 @@ const handleExplore = ()=>{
           </div>
         </div>
       </section>
-        <section className="max-w-7xl mx-auto px-6 py-16 md:py-20">
+
+      {/* CONTACT */}
+      <section className="max-w-7xl mx-auto px-6 py-16 md:py-20">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-xl shadow-lg border border-amber-200">
             <MapPin className="w-10 h-10 text-amber-600 mb-4" />
@@ -145,11 +187,10 @@ const handleExplore = ()=>{
           </div>
         </div>
       </section>
-      <Footer/>
+
+      <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default Home
-
-
+export default Home;
