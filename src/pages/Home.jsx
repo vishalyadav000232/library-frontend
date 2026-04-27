@@ -43,7 +43,7 @@ navigate("/dashboard/seats")
 }
 
 const handleExplore = ()=>{
-console.log('object')
+
 }
   return (
     <div>

@@ -44,12 +44,15 @@ export default function SignupPage() {
         name,
         email,
         password,
+        role : "STUDENT"
       };
 
       const res = await register_user(payload)
 
       console.log("Signup Success:", res);
-      navigate("/dashboard");
+      // Backend signup returns only the created user, not auth tokens.
+      // Redirect to login so the user can sign in with their new account.
+      navigate("/login");
     } catch (err) {
       console.error(err);
       setError(

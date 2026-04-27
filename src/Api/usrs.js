@@ -25,3 +25,16 @@ export const get_all_users = async () => {
     throw error; 
   }
  }
+
+
+
+
+export const deleteUser = async (userId) => {
+  try {
+    const res = await authApi.delete(`/users/${userId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Delete user failed:", error.response?.data || error?.message);
+    throw error;
+  }
+};

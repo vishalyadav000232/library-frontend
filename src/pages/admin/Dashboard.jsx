@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getDashboardData } from "../../Api/admin";
-import { get_all_users } from "../../Api/usrs";
+import { deleteUser, get_all_users } from "../../Api/usrs";
 import {
   LayoutDashboard,
   Armchair,
@@ -80,34 +80,43 @@ const handleEditUser = (user_id) => {
 };
 
 //! TODO: Implement delete user API integration with confirmation modal
-const handleDeleteUser = (user_id) => {
-  console.log("Delete user with ID:", user_id);
+const handleDeleteUser = async (user_id) => {
+ 
+  const confirmDelete = window.confirm("Are you sure you want to delete this user?");
+  if (!confirmDelete) return;
 
-  // TODO:
-  // 1. Show confirmation modal
-  // 2. Call delete API
-  // 3. Refresh user list
+  try {
+  
+    await deleteUser(user_id);
+
+    
+    
+
+    const users = await get_all_users();
+    console.log(user)
+    setUser()
+    alert("User deleted successfully");
+
+  } catch (error) {
+    console.error("Delete failed:", error);
+    alert("Failed to delete user");
+  }
 };
 
-//! TODO: Navigate to seat creation page
 const handleAddSeat = () => {
   navigarion("/admin/seats")
 
-  // TODO:
-  // Navigate to `/admin/seats/create`
 };
 
-//! TODO: Navigate to shift management page
 const handleManageShifts = () => {
   console.log("Navigate to Manage Shifts");
 
 
 };
 
-//! TODO: Connect export reports API and download CSV file
+
 const handleExportReports = () => {
   navigarion("/admin/reports")
-
  
 };
 

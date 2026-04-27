@@ -17,6 +17,7 @@ authApi.interceptors.request.use(
     const token = localStorage.getItem("access_token")
 
     const requestUrl = config.url || "";
+    console.log(requestUrl)
     const isAuthRoute =
       requestUrl.includes("/users/login") ||
       requestUrl.includes("/users/signup") ||

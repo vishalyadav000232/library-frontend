@@ -26,7 +26,7 @@ import StatCard from "./ui/StatCard";
 import Header from "./ui/Header";
 
 import { getDashboardData } from "../../Api/admin";
-import { get_all_users } from "../../Api/usrs";
+import { deleteUser, get_all_users } from "../../Api/usrs";
 
 const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -86,8 +86,10 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        // 🔥 Delete API yaha add karna hoga
-        // await deleteUser(userId);
+        
+        const res = await deleteUser(userId);
+        console.log(res)
+
 
         // Refresh users list
         const users = await get_all_users();
