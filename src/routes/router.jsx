@@ -41,9 +41,9 @@ export const router = createBrowserRouter([
 {
   path: "/admin",
   element: (
-    <ProtectedRoute allowedRoles={["ADMIN"]}>
+    // <ProtectedRoute allowedRoles={["ADMIN"]}>
       <AdminLayout />
-    </ProtectedRoute>
+    //  {/* </ProtectedRoute> */}
   ),
   children: [
     {
@@ -82,9 +82,9 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: (
-      <ProtectedRoute allowedRoles={["STUDENT", "USER"]}>
+      // <ProtectedRoute allowedRoles={["STUDENT", "USER"]}>
         <LayoutPage />
-      </ProtectedRoute>
+      // {/* </ProtectedRoute> */}
     ),
     children: [
       {

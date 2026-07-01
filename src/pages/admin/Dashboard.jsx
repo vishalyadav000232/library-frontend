@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getDashboardData } from "../../Api/admin";
-import { deleteUser, get_all_users } from "../../Api/usrs";
+
 import {
   LayoutDashboard,
   Armchair,
@@ -87,14 +86,10 @@ const handleDeleteUser = async (user_id) => {
 
   try {
   
-    await deleteUser(user_id);
+    await deleteUserById(user_id);
 
-    
-    
-
-    const users = await get_all_users();
-    console.log(user)
-    setUser()
+    const users = await getAllUsers();
+    setUser(users || []);
     alert("User deleted successfully");
 
   } catch (error) {

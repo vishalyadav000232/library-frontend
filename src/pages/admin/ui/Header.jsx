@@ -7,8 +7,8 @@ import {
   Settings,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { getUser } from "../../../Api/admin";
 import { useNavigate } from "react-router-dom";
+import { getCurrentUser } from "../../../Api/usrs";
 
 const Header = ({ showDropdown }) => {
 const [user, setUser] = useState(null);
@@ -21,7 +21,7 @@ const navigarion = useNavigate();
 useEffect(() => {
   const fetchUser = async () => {
     try {
-      const data = await getUser();
+      const data = await getCurrentUser();
       console.log(data)
       setUser(data);
     } catch (error) {

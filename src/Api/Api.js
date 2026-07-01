@@ -19,9 +19,9 @@ authApi.interceptors.request.use(
     const requestUrl = config.url || "";
     console.log(requestUrl)
     const isAuthRoute =
-      requestUrl.includes("/users/login") ||
-      requestUrl.includes("/users/signup") ||
-      requestUrl.includes("/users/refresh")
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/signup") ||
+      requestUrl.includes("/auth/refresh")
 
     if (token && !isAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`
@@ -42,7 +42,7 @@ authApi.interceptors.response.use(
     const originalRequest = error.config;
 
     const requestUrl = originalRequest?.url || "";
-    const isRefreshCall = requestUrl.includes("/users/refresh");
+    const isRefreshCall = requestUrl.includes("/auth/refresh");
 
     if (
       error.response?.status === 401 &&
@@ -53,7 +53,7 @@ authApi.interceptors.response.use(
 
       if (!isRefreshing) {
         isRefreshing = true;
-        refreshPromise = authApi.post("/users/refresh", {}, { withCredentials: true })
+        refreshPromise = authApi.post("/auth/refresh", {}, { withCredentials: true })
           .then((res) => {
             const newAccess = res.data.access_token;
             if (newAccess) {

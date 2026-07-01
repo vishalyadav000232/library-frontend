@@ -25,8 +25,6 @@ import AdminUserManagement from "./AdminUserManagment";
 import StatCard from "./ui/StatCard";
 import Header from "./ui/Header";
 
-import { getDashboardData } from "../../Api/admin";
-import { deleteUser, get_all_users } from "../../Api/usrs";
 
 const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -51,7 +49,7 @@ const AdminDashboard = () => {
 
         const [dashboardData, users] = await Promise.all([
           getDashboardData(),
-          get_all_users(),
+          getAllUsers(),
         ]);
 
         setDashboard(dashboardData || {});

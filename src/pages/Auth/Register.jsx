@@ -93,7 +93,7 @@ export default function SignupPage() {
             Create Account
           </h1>
           <p className="text-amber-700 text-sm">
-            Join Yadav Library Today
+            Join Yadav Library today! Sign up to access your dashboard, borrow books, and manage your account.
           </p>
         </div>
 

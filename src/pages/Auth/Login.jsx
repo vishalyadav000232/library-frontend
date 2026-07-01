@@ -108,7 +108,7 @@ const handleSubmit = async (e) => {
             Welcome Back
           </h1>
           <p className="text-amber-700 text-sm">
-            Sign in to Yadav Library
+            Sign in to your account to continue
           </p>
         </div>
 

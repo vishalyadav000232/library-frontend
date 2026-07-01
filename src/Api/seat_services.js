@@ -18,7 +18,7 @@ export const getAllSeats = async () => {
 // -----------------------------
 export const createSeat = async (seatData) => {
   try {
-    const res = await authApi.post("/seats", seatData);
+    const res = await authApi.post("admin/seats", seatData);
     return res.data;
   } catch (error) {
     console.error("Failed to create seat:", error);
@@ -31,7 +31,7 @@ export const createSeat = async (seatData) => {
 
 export const deleteSeat = async (seatId) => {
   try {
-    const res = await authApi.delete(`/seats/${seatId}/delete`);
+    const res = await authApi.delete(`admin/seats/${seatId}/delete`);
     return res.data;
   } catch (error) {
     console.error("Failed to delete seat:", error);
@@ -46,7 +46,7 @@ export const deleteSeat = async (seatId) => {
 export const updateSeat = async (seatId, updateData) => {
   try {
     const res = await authApi.patch(
-      `/seats/${seatId}/update`,
+      `admin/seats/${seatId}/update`,
       updateData   
     );
     return res.data;

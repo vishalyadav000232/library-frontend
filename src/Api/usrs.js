@@ -17,7 +17,7 @@ export const get_all_users = async () => {
 
  export const getCurrentUser = async () =>{
   try {
-    const res = await authApi.get("/users/me")
+    const res = await authApi.get("/auth/me")
     console.log("Current user : " , res.data)
     return res.data
   } catch (error) {
