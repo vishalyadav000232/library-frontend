@@ -14,7 +14,7 @@ export const login_user = async (loginData) => {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        withCredentials: true   
+        withCredentials: false   
       }
     );
 

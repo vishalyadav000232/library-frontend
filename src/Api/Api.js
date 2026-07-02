@@ -5,7 +5,7 @@ const authApi = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true
+  withCredentials: false
 })
 
 let isRefreshing = false;
