@@ -1,59 +1,40 @@
 import authApi from "./Api";
-
+import { notifySuccess } from "./errorHandler";
 
 export const login_user = async (loginData) => {
-  try {
-    const formData = new URLSearchParams();
-    formData.append("username", loginData.email);
-    formData.append("password", loginData.password);
+  const formData = new URLSearchParams();
+  formData.append("username", loginData.email);
+  formData.append("password", loginData.password);
 
-    const res = await authApi.post(
-      "/auth/login",
-      formData,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        withCredentials: false   
-      }
-    );
+  const res = await authApi.post("/auth/login", formData, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    skipAutoLogout: true,
+  });
 
-    
-    localStorage.setItem("access_token", res.data.access_token);
+  const accessToken = res.data?.access_token;
+  const role = res.data?.role || res.data?.user?.role;
 
-    return res.data;
+  if (accessToken) localStorage.setItem("access_token", accessToken);
+  if (role) localStorage.setItem("role", role);
 
-  } catch (error) {
-    console.error("Login failed:", error);
-    throw error;
-  }
+  notifySuccess("Login successful");
+  return { ...res.data, role };
 };
-
 
 export const register_user = async (registerData) => {
-  try {
-    const res = await authApi.post("/auth/signup", registerData);
-    return res.data;
-  } catch (error) {
-    console.error("Registration failed. :", error);
-    throw error;
-  }
+  const res = await authApi.post("/auth/signup", registerData);
+  notifySuccess("Account created successfully");
+  console.log(res)
+  return res.data;
 };
-
 
 export const logout_user = async () => {
   try {
-    const res = await authApi.post(
-      "/auth/logout",
-      {},
-      { withCredentials: true }
-    );
-    
-    localStorage.removeItem("access_token");
+    const res = await authApi.post("/auth/logout", {}, { skipToast: true, skipAutoLogout: true });
+    notifySuccess("Logged out successfully");
     return res.data;
-  } catch (error) {
-    console.error("Logout failed:", error);
+  } finally {
     localStorage.removeItem("access_token");
-    throw error;
+    localStorage.removeItem("role");
   }
 };
