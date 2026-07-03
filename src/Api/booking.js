@@ -1,80 +1,57 @@
 import authApi from "./Api";
-
-//! ✅ CREATE BOOKING
+import { notifySuccess } from "./errorHandler";
 
 export const createBooking = async (payload) => {
-  try {
-    const res = await authApi.post("/bookings", payload);
-    console.log("Booking Success:", res.data);
-    return res.data;
-  } catch (error) {
-    console.error("Booking Failed:", error.response?.data || error.message);
-    throw error;
-  }
+  const cleanPayload = { ...payload };
+  delete cleanPayload.user_id; // backend gets user from JWT token
+
+  const res = await authApi.post("/bookings/", cleanPayload);
+  notifySuccess("Booking created successfully");
+  return res.data;
 };
 
-//! ✅ GET ALL BOOKINGS (Admin)
+export const createBookingWithPayment = async (payload) => {
+  const cleanPayload = { ...payload };
+  delete cleanPayload.user_id;
+
+  const res = await authApi.post("/bookings/create-with-payment", cleanPayload);
+  return res.data;
+};
+
+export const verifyBookingPayment = async (payload) => {
+  const res = await authApi.post("/bookings/verify-payment", payload);
+  notifySuccess("Payment verified successfully");
+  return res.data;
+};
+
 export const getAllBookings = async () => {
-  try {
-    const res = await authApi.get("/bookings/all");
-    return res.data;
-  } catch (error) {
-    console.error("Get All Bookings Failed:", error.response?.data || error.message);
-    throw error;
-  }
+  const res = await authApi.get("/admin/bookings/");
+  return res.data;
 };
 
-//! ✅ GET BOOKING BY ID
 export const getBookingById = async (bookingId) => {
-  try {
-    const res = await authApi.get(`/bookings/${bookingId}`);
-    return res.data;
-  } catch (error) {
-    console.error("Get Booking Failed:", error.response?.data || error.message);
-    throw error;
-  }
+  const res = await authApi.get(`/bookings/${bookingId}`);
+  return res.data;
 };
 
-//! ✅ UPDATE BOOKING (PATCH)
-export const updateBooking = async (bookingId, payload) => {
-  try {
-    const res = await authApi.patch(`/bookings/${bookingId}`, payload);
-    return res.data;
-  } catch (error) {
-    console.error("Update Booking Failed:", error.response?.data || error.message);
-    throw error;
-  }
-};
-
-//! ✅ CANCEL BOOKING (PATCH)
 export const cancelBooking = async (bookingId) => {
-  try {
-    const res = await authApi.patch(`/bookings/${bookingId}/cancel`);
-    return res.data;
-  } catch (error) {
-    console.error("Cancel Booking Failed:", error.response?.data || error.message);
-    throw error;
-  }
+  const res = await authApi.patch(`/bookings/${bookingId}/cancel`);
+  notifySuccess("Booking cancelled successfully");
+  return res.data;
 };
 
-//! ✅ DELETE BOOKING (Admin / Hard Delete)
-export const deleteBooking = async (bookingId) => {
-  try {
-    const res = await authApi.delete(`/bookings/${bookingId}`);
-    return res.data;
-  } catch (error) {
-    console.error("Delete Booking Failed:", error.response?.data || error.message);
-    throw error;
-  }
+export const adminCancelBooking = async (bookingId) => {
+  const res = await authApi.patch(`/admin/bookings/${bookingId}/cancel`);
+  notifySuccess("Booking cancelled successfully");
+  return res.data;
 };
 
-//! ✅ GET MY BOOKINGS (User)
+export const getBookingReport = async () => {
+  const res = await authApi.get("/admin/bookings/report");
+  return res.data;
+};
+
 export const getMyBookings = async () => {
-  try {
-    const res = await authApi.get("/bookings/me/my-bookings");
-    return res.data;
-  } catch (error) {
-    console.error("My Bookings Failed:", error.response?.data || error.message);
-    throw error;
-  }
+  const res = await authApi.get("/bookings/me");
+  return res.data;
 };
