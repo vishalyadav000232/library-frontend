@@ -1,57 +1,35 @@
 import authApi from "./Api";
+import { notifySuccess } from "./errorHandler";
 
-// -----------------------------
-//! GET ALL SEATS
-// -----------------------------
 export const getAllSeats = async () => {
-  try {
-    const res = await authApi.get("/seats/");
-    return res.data;
-  } catch (error) {
-    console.error("Failed to fetch seats:", error);
-    throw error;
-  }
+  const res = await authApi.get("/seats/");
+  return res.data;
 };
 
-// -----------------------------
-//! CREATE SEAT (ADMIN)
-// -----------------------------
+export const getSeatById = async (seatId) => {
+  const res = await authApi.get(`/seats/${seatId}`);
+  return res.data;
+};
+
+export const getSeatStats = async () => {
+  const res = await authApi.get("/admin/seats/stats/summary");
+  return res.data;
+};
+
 export const createSeat = async (seatData) => {
-  try {
-    const res = await authApi.post("admin/seats", seatData);
-    return res.data;
-  } catch (error) {
-    console.error("Failed to create seat:", error);
-    throw error;
-  }
+  const res = await authApi.post("/admin/seats/", seatData);
+  notifySuccess("Seat created successfully");
+  return res.data;
 };
-
-
-// ! DELETE SEAT (ADMIN)
 
 export const deleteSeat = async (seatId) => {
-  try {
-    const res = await authApi.delete(`admin/seats/${seatId}/delete`);
-    return res.data;
-  } catch (error) {
-    console.error("Failed to delete seat:", error);
-    throw error;
-  }
+  const res = await authApi.delete(`/admin/seats/${seatId}`);
+  notifySuccess("Seat deleted successfully");
+  return res.data;
 };
 
-
-// ! UPDATE SEAR (ADMIN)
-
-
 export const updateSeat = async (seatId, updateData) => {
-  try {
-    const res = await authApi.patch(
-      `admin/seats/${seatId}/update`,
-      updateData   
-    );
-    return res.data;
-  } catch (error) {
-    console.error("Failed to update seat:", error);
-    throw error;
-  }
+  const res = await authApi.patch(`/admin/seats/${seatId}`, updateData);
+  notifySuccess("Seat updated successfully");
+  return res.data;
 };

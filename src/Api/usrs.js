@@ -1,8 +1,19 @@
 import authApi from "./Api";
 import { notifySuccess } from "./errorHandler";
 
-export const get_all_users = async (params = {}) => {
-  const res = await authApi.get("/admin/user/", { params });
+export const get_all_users = async ({
+  page = 1,
+  size = 10,
+  search = "",
+} = {}) => {
+  const res = await authApi.get("/admin/user/", {
+    params: {
+      page,
+      size,
+      search,
+    },
+  });
+
   return res.data;
 };
 
