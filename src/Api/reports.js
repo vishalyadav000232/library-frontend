@@ -1,35 +1,57 @@
 import authApi from "./Api";
-import { notifySuccess } from "./errorHandler";
 
-export const getAllSeats = async () => {
-  const res = await authApi.get("/seats/");
-  return res.data;
+const generateReport = async (reportType, startDate, endDate) => {
+  try {
+    const response = await authApi.get(`/reports/${reportType}`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error generating report:",
+      error.response?.data?.detail || error.message,
+    );
+    throw error;
+  }
 };
 
-export const getSeatById = async (seatId) => {
-  const res = await authApi.get(`/seats/${seatId}`);
-  return res.data;
+export const generateReportPdf = async (reportType, startDate, endDate) => {
+  try {
+    const response = await authApi.get(`/reports/${reportType}/pdf`, {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+      },
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.log("Error generating Report Pdf ", error.response?.data.detail);
+  }
 };
 
-export const getSeatStats = async () => {
-  const res = await authApi.get("/admin/seats/stats/summary");
-  return res.data;
-};
 
-export const createSeat = async (seatData) => {
-  const res = await authApi.post("/admin/seats/", seatData);
-  notifySuccess("Seat created successfully");
-  return res.data;
-};
 
-export const deleteSeat = async (seatId) => {
-  const res = await authApi.delete(`/admin/seats/${seatId}`);
-  notifySuccess("Seat deleted successfully");
-  return res.data;
-};
+export const generateReportExcel = async ( reportType , startDate , endDate) =>{
+    try {
+        const response = await authApi.get(`/reports/${reportType}/excel`, {
+            params: {
+                start_date: startDate,
+                end_date: endDate,
+            },
+            responseType: 'blob'
+        });
+        return response.data;   
+    }
+    catch (error) {
+        console.log("Error generating Report Excel ", error.response?.data.detail);
+        throw error;
+    }       
+}
 
-export const updateSeat = async (seatId, updateData) => {
-  const res = await authApi.patch(`/admin/seats/${seatId}`, updateData);
-  notifySuccess("Seat updated successfully");
-  return res.data;
-};
+export { generateReport };
+

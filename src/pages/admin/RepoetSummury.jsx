@@ -6,13 +6,9 @@ import {
   Users,
   IndianRupee,
   BarChart3,
-  PieChart,
   FileText,
-  Filter,
   RefreshCw,
-  ChevronDown,
   Eye,
-  X,
   Clock,
   MapPin,
   BookOpen,
@@ -22,6 +18,7 @@ import {
   generateReportExcel,
   generateReportPdf,
 } from "../../Api/reports";
+// removed unused import generateBooks
 import AnalyticsCard from "./ui/AnalyticsCard";
 
 const ReportsPage = () => {
@@ -433,7 +430,7 @@ const ReportsPage = () => {
             <button
               onClick={handleGenerateReport}
               disabled={loading}
-              className="px-6 py-3 border-2 border-amber-300 text-amber-700 rounded-lg  hover:bg-amber-00 transition delay-75 ease-in  font-semibold"
+              className="px-6 py-3 border-2 border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 transition delay-75 ease-in font-semibold"
             >
              <Download className="w-4 h-4 inline mr-2" />
              Export Json
